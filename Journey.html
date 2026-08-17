@@ -678,7 +678,9 @@ var store={
   fitness:load('fitness',[]),
   reports:load('reports',[]),
   reminders:load('reminders',[]),
-  settings:Object.assign({nightOn:true,nightTime:'22:10',wordLimit:10,soundOn:true,speechRate:0.6,syncEnabled:false,syncToken:'',syncServer:'',syncRev:0},load('settings',{}))
+  deck:load('deck',null),
+  streak:load('streak',{lastDate:null,count:0,total:0}),
+  settings:Object.assign({nightOn:true,nightTime:'22:10',wordLimit:10,soundOn:true,speechRate:0.6,wordRemindOn:true,wordRemindTime:'20:00',syncEnabled:false,syncToken:'',syncServer:'',syncRev:0},load('settings',{}))
 };
 
 /* ===== Toast ===== */
@@ -807,7 +809,7 @@ function delProject(id){
 function openProjectCount(){return store.projects.filter(function(p){return !p.done;}).length;}
 
 /* ===== Russian words ===== */
-var FORGET_INTERVALS=[1,3,7,15,30];
+var FORGET_INTERVALS=[1,1,3,7,15,30];
 var DEFAULT_WORDS=[
   ['реклама','rek-lá-ma','广告',[['Мы делаем рекламу.','我们做广告。'],['Реклама готова.','广告准备好了。'],['Это реклама завода.','这是工厂的广告。']]],
   ['завод','zá-vod','工厂',[['Наш завод большой.','我们的工厂很大。'],['Завод работает.','工厂在运转。'],['Я на заводе.','我在工厂。']]],
@@ -902,27 +904,29 @@ function pickWords(n){
   return studying.concat(graduated).slice(0,n);
 }
 function rateWord(id,lv){
-  var w=store.words.find(function(x){return x.id===id;});
-  if(!w)return;
+  var w=byId(id);if(!w)return;
   w.level=lv;
   w.lastReview=today();
   w.lastRate=lv;
-  if(lv===2){ // 认识
+  if(lv===2){ // 认识：今日完成该词，按记忆曲线安排下次复习
     w.streak=(w.streak||0)+1;
     w.r=(w.r||0)+1;
-    // 连续认识 2 次才算毕业（点完认识当天即完成，之后按遗忘曲线长期复习仍会出现）
     if(w.streak>=2)w.graduated=true;
     var idx=Math.min((w.r||1)-1,FORGET_INTERVALS.length-1);
-    w.nextReview=fmtDate(addDays(today(),FORGET_INTERVALS[idx])); // 1/3/7/15/30 天，越来越长
-  }else if(lv===1){ // 不熟悉
+    w.nextReview=fmtDate(addDays(today(),FORGET_INTERVALS[idx])); // 1/3/7/15/30 天
+    if(store.deck&&store.deck.ids.indexOf(id)>=0&&store.deck.done.indexOf(id)<0)store.deck.done.push(id);
+  }else{ // 不认识/不熟悉：当天循环到队尾，不移除、不新增；并安排后续复习
     w.streak=0;
-    w.nextReview=fmtDate(addDays(today(),2)); // 2 天后再来
-  }else{ // 不认识
-    w.streak=0;
-    w.nextReview=fmtDate(addDays(today(),1)); // 明天再来（最少多出现几天）
+    w.nextReview=fmtDate(addDays(today(),lv===0?1:2));
+    if(store.deck&&store.deck.ids.indexOf(id)>=0){
+      var arr=store.deck.ids, p=arr.indexOf(id);
+      if(p>=0){arr.splice(p,1);arr.push(id);}
+    }
   }
+  checkIn();
   save('words',store.words);
-  renderWords();
+  if(store.deck)save('deck',store.deck);
+  renderWords();renderLife();
   showToast('已记录：'+(lv===2?'认识':lv===1?'不熟悉':'不认识'));
 }
 function addWord(w,m,t,exs){
@@ -932,8 +936,51 @@ function addWord(w,m,t,exs){
 }
 function delWord(id){
   store.words=store.words.filter(function(x){return x.id!==id;});
+  if(store.deck){store.deck.ids=store.deck.ids.filter(function(i){return i!==id;});store.deck.done=store.deck.done.filter(function(i){return i!==id;});save('deck',store.deck);}
   save('words',store.words);
   renderWords();
+}
+function byId(id){return store.words.find(function(x){return x.id===id;});}
+function ensureDeck(){
+  var td=today();
+  if(store.deck&&store.deck.date===td&&Array.isArray(store.deck.ids)&&store.deck.ids.length)return;
+  buildDeck();
+}
+function buildDeck(){
+  var n=store.settings.wordLimit||10, td=today();
+  // 优先排今天到期的复习词（含已毕业的长期复习），按下次复习时间升序
+  var due=store.words.filter(function(w){return !w.nextReview||w.nextReview<=td;});
+  due.sort(function(a,b){return (a.nextReview||td).localeCompare(b.nextReview||td)||(a.addedAt||td).localeCompare(b.addedAt||td);});
+  var ids=due.slice(0,n).map(function(w){return w.id;});
+  // 不足上限则补未学过的新词（r===0），当天固定这 10 个，不再新增
+  if(ids.length<n){
+    store.words.forEach(function(w){
+      if(ids.length>=n)return;
+      if(ids.indexOf(w.id)>=0)return;
+      if((w.r||0)>0)return;
+      ids.push(w.id);
+    });
+  }
+  store.deck={date:td,ids:ids,done:[],startedAt:Date.now()};
+  save('deck',store.deck);
+}
+function activeDeck(){return store.deck?(store.deck.ids||[]).filter(function(i){return (store.deck.done||[]).indexOf(i)<0;}):[];}
+function deckTotal(){return store.deck?(store.deck.ids||[]).length:0;}
+function deckDone(){return store.deck?((store.deck.done||[]).length):0;}
+function checkIn(){
+  var s=store.streak||{lastDate:null,count:0,total:0}, td=today();
+  if(s.lastDate===td)return;
+  if(s.lastDate&&diffDays(td,s.lastDate)===1)s.count=(s.count||0)+1;
+  else s.count=1;
+  s.total=(s.total||0)+1;
+  s.lastDate=td;
+  store.streak=s;save('streak',s);
+}
+function reshuffleDeck(){
+  if(!store.deck)return;
+  store.deck.done=[];
+  for(var i=store.deck.ids.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=store.deck.ids[i];store.deck.ids[i]=store.deck.ids[j];store.deck.ids[j]=t;}
+  save('deck',store.deck);renderWords();
 }
 function seedWords(){
   if(store.words.length>0)return;
@@ -984,6 +1031,7 @@ function fitnessCountThisWeek(){
 
 /* ===== Render ===== */
 function renderAll(){
+  ensureDeck();
   renderTabs();
   renderToday();
   renderDeals();
@@ -1038,11 +1086,12 @@ function renderToday(){
       meta:'一周目标 4 次',overdue:false,
       action:'goto',actionId:'life'});
   }
-  var dueCount=(pickWords(store.settings.wordLimit)||[]).length;
-  if(dueCount>0){
+  ensureDeck();
+  var remain=activeDeck().length, totalN=deckTotal();
+  if(totalN>0){
     items.push({tag:'life',tagTxt:'俄语单词',
-      title:'今日单词 '+dueCount+' 个',
-      meta:'反复背到都认识 · 上限 '+store.settings.wordLimit+' 个/天',overdue:false,
+      title:'今日单词还差 '+remain+' / '+totalN+' 个',
+      meta:'反复背到都认识 · 每天封顶 '+store.settings.wordLimit+' 个',overdue:false,
       action:'goto',actionId:'life'});
   }
   // 客户跟进提醒：距上次跟进满 7 天的客户，红色置顶
@@ -1256,13 +1305,14 @@ function renderReview(){
 
 /* ===== Render Life ===== */
 function renderLife(){
-  var due=getDueWords();
-  var todayWords=store.words.filter(function(w){return w.lastReview===today();});
+  ensureDeck();
+  var doneN=deckDone(), totalN=deckTotal();
   var knownRate=store.words.length?Math.round(store.words.filter(function(w){return (w.level||0)>=2;}).length/store.words.length*100):0;
   var fitWeek=fitnessCountThisWeek();
+  var streakN=(store.streak&&store.streak.count)||0;
   var h='';
-  h+='<div class="stat"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/></svg>今日已学</div><div class="num">'+todayWords.length+'<small>/ '+store.settings.wordLimit+'</small></div></div>';
-  h+='<div class="stat"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-9-9"/><path d="M21 3v6h-6"/></svg>待复习</div><div class="num">'+due.length+'</div></div>';
+  h+='<div class="stat"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/></svg>今日单词</div><div class="num">'+doneN+'<small>/ '+totalN+'</small></div></div>';
+  h+='<div class="stat"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 5 5.6.8-4 4 1 5.6L12 22l-5-2.4 1-5.6-4-4 5.6-.8z"/></svg>连续签到</div><div class="num">'+streakN+'<small>天</small></div></div>';
   h+='<div class="stat"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>掌握度</div><div class="num">'+knownRate+'<small>%</small></div></div>';
   h+='<div class="stat"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 22a4 4 0 100-8 4 4 0 000 8zM10 4l-7 7 4 4 7-7-4-4z"/></svg>本周健身</div><div class="num">'+fitWeek+'<small>/ 4</small></div></div>';
   $('lifeStats').innerHTML=h;
@@ -1271,14 +1321,23 @@ function renderLife(){
   renderNightSettings();
 }
 function renderWords(){
-  var due=pickWords(store.settings.wordLimit)||[];
+  ensureDeck();
+  var ids=activeDeck();
+  var total=deckTotal(), done=deckDone();
   var h='';
-  if(due.length===0){
-    h+=emptyHtml('今日无需复习的单词','词库 '+store.words.length+' 个 · 下次复习时间已排好');
+  if(total===0){
+    h+=emptyHtml('词库还是空的','点“+ 加词”添加俄语单词，或从行业词库导入');
+  }else if(ids.length===0){
+    h+='<div style="text-align:center;padding:28px 14px">'
+      +'<div style="font-size:42px">🎉</div>'
+      +'<div style="font-size:16px;font-weight:800;color:var(--navy);margin:10px 0">今天 '+total+' 个单词全部认完啦！</div>'
+      +'<div style="font-size:13px;color:var(--mut)">已连续坚持 <b style="color:var(--green)">'+((store.streak&&store.streak.count)||0)+'</b> 天 · 明天会按记忆曲线继续复习这批词</div>'
+      +'<button class="btn btn-ghost" data-action="reshuffle" style="margin-top:16px">打乱顺序再背一遍</button></div>';
   }else{
-    var knownToday=due.filter(function(w){return w.lastReview===today() && w.lastRate===2;}).length;
-    var gradCount=store.words.filter(function(w){return w.graduated;}).length;
-    h+='<div style="font-size:12.5px;color:var(--mut);margin-bottom:8px">今天 <b style="color:var(--navy)">'+due.length+'</b> 个单词 · 已认识 <b style="color:var(--green)">'+knownToday+'</b>/'+due.length+' · 词库共 '+store.words.length+' 个（已毕业 '+gradCount+' 个，按曲线长期复习）</div>';
+    var pct=total?Math.round(done/total*100):0;
+    h+='<div style="margin-bottom:10px">'
+      +'<div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut);margin-bottom:6px"><span>今日进度 <b style="color:var(--navy)">'+done+' / '+total+'</b></span><span>不认识会排到队尾循环 · 每天封顶 '+store.settings.wordLimit+' 个</span></div>'
+      +'<div style="height:8px;background:var(--line);border-radius:6px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,var(--navy),var(--green));transition:.3s"></div></div></div>';
     var rates=[['0.75','慢'],['0.6','很慢'],['0.45','最慢']];
     var sr=store.settings.speechRate||0.6;
     h+='<div style="display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:12.5px;color:var(--mut)">朗读语速'
@@ -1287,7 +1346,8 @@ function renderWords(){
       +'</select>'
       +'<span style="color:var(--muter)">· 初学者建议「最慢」</span></div>';
     h+='<div class="word-grid">';
-    due.forEach(function(w){
+    ids.forEach(function(id){
+      var w=byId(id); if(!w)return;
       var exHtml='';
       (w.examples||[]).forEach(function(ex,ei){
         exHtml+='<div class="wc-ex">'
@@ -1472,22 +1532,26 @@ function submitWord(){
 }
 function showNightForm(){
   var h='<form onsubmit="return false">';
-  h+='<div class="field"><label>提醒时间</label><input type="time" name="nightTime" value="'+esc(store.settings.nightTime)+'"></div>';
+  h+='<div class="field"><label>熬夜提醒时间</label><input type="time" name="nightTime" value="'+esc(store.settings.nightTime)+'"></div>';
   h+='<div class="field"><label class="checkbox-line"><input type="checkbox" name="nightOn" '+(store.settings.nightOn?'checked':'')+'>启用熬夜提醒</label></div>';
-  h+='<div style="font-size:12px;color:var(--mut);margin-top:8px">设置后每天到点会播放轻柔铃声 + 弹窗提醒（需保持页面打开）。本页顶部倒计时同步更新。</div>';
+  h+='<hr style="border:none;border-top:1px solid var(--line);margin:16px 0">';
+  h+='<div class="field"><label>背单词提醒时间</label><input type="time" name="wordRemindTime" value="'+esc(store.settings.wordRemindTime||'20:00')+'"></div>';
+  h+='<div class="field"><label class="checkbox-line"><input type="checkbox" name="wordRemindOn" '+(store.settings.wordRemindOn!==false?'checked':'')+'>启用背单词提醒（每天弹窗，手机 APP 也弹）</label></div>';
+  h+='<div style="font-size:12px;color:var(--mut);margin-top:8px">到点会播放轻柔铃声 + 弹窗提醒（页面需保持打开）。背单词每天封顶 '+store.settings.wordLimit+' 个，不认识就排到队尾循环，按记忆曲线复习。</div>';
   h+='<div class="row" style="margin-top:14px"><button class="btn btn-primary" data-action="submit-night">保存</button><button class="btn btn-ghost" data-action="close-modal">取消</button></div>';
   h+='</form>';
-  openModal('22:10 熬夜提醒设置',h);
+  openModal('提醒设置',h);
 }
 function submitNight(){
   var f=document.querySelector('#modalBody form');if(!f)return;
   var data=Object.fromEntries(new FormData(f).entries());
   data.nightOn=f.querySelector('[name=nightOn]').checked;
+  data.wordRemindOn=f.querySelector('[name=wordRemindOn]').checked;
   Object.assign(store.settings,data);
   save('settings',store.settings);
-  renderNight();
+  renderNight();renderReminders();renderLife();
   closeModal();
-  showToast('熬夜提醒已更新');
+  showToast('提醒设置已更新');
 }
 
 /* ===== Daily Report ===== */
@@ -1562,7 +1626,7 @@ function switchTab(key){
 
 /* ===== Backup ===== */
 function exportAll(){
-  var data={tasks:store.tasks,projects:store.projects,words:store.words,fitness:store.fitness,reports:store.reports,reminders:store.reminders,settings:store.settings,_exportedAt:new Date().toISOString()};
+  var data={tasks:store.tasks,projects:store.projects,words:store.words,fitness:store.fitness,reports:store.reports,reminders:store.reminders,deck:store.deck,streak:store.streak,settings:store.settings,_exportedAt:new Date().toISOString()};
   var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   var a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
@@ -1581,8 +1645,8 @@ function importAll(){
         var d=JSON.parse(r.result);
         if(!d.tasks)throw 0;
         if(!confirm('将覆盖现有数据，确认导入？'))return;
-        store.tasks=d.tasks||[];store.projects=d.projects||[];store.words=d.words||[];store.fitness=d.fitness||[];store.reports=d.reports||[];store.settings=Object.assign({},store.settings,d.settings||{});
-        save('tasks',store.tasks);save('projects',store.projects);save('words',store.words);save('fitness',store.fitness);save('reports',store.reports);save('settings',store.settings);
+        store.tasks=d.tasks||[];store.projects=d.projects||[];store.words=d.words||[];store.fitness=d.fitness||[];store.reports=d.reports||[];store.deck=d.deck||null;store.streak=d.streak||{lastDate:null,count:0,total:0};store.settings=Object.assign({},store.settings,d.settings||{});
+        save('tasks',store.tasks);save('projects',store.projects);save('words',store.words);save('fitness',store.fitness);save('reports',store.reports);save('deck',store.deck);save('streak',store.streak);save('settings',store.settings);
         if(store.settings.syncEnabled)initSync();
         renderAll();showToast('导入成功');
       }catch(e){showToast('文件格式不对','err');}
@@ -1722,7 +1786,7 @@ function speak(text){
 }
 
 /* ===== Auto cross-device sync (server-backed) ===== */
-var SYNC_KEYS=['tasks','projects','words','fitness','reports','reminders'];
+var SYNC_KEYS=['tasks','projects','words','fitness','reports','reminders','deck','streak'];
 var syncState={enabled:false,token:'',localRev:0,applying:false,pushTimer:null,timer:null};
 function syncBase(){return (store.settings.syncServer||'').replace(/\/+$/,'')||'';}
 function genToken(){var s='';var c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';for(var i=0;i<12;i++)s+=c[Math.floor(Math.random()*c.length)];return s;}
@@ -1844,6 +1908,7 @@ document.addEventListener('click',function(e){
   else if(a==='add-word')showWordForm();
   else if(a==='pick-words')renderWords();
   else if(a==='rate')rateWord(id,+el.getAttribute('data-lv'));
+  else if(a==='reshuffle')reshuffleDeck();
   else if(a==='fit'){
     var d=el.getAttribute('data-date');
     var i=store.fitness.indexOf(d);
@@ -1991,6 +2056,7 @@ function tickReminders(){
   var log=load('fired',{});if(!log[ymd])log[ymd]=[];
   function fire(key,text){if(log[ymd].indexOf(key)>=0)return;log[ymd].push(key);save('fired',log);showReminder(text);}
   if(store.settings.nightOn){var nt=store.settings.nightTime||'22:10';if(hm===nt)fire('night','该放下手机啦 · 22:10 别熬夜，早睡养神');}
+  if(store.settings.wordRemindOn!==false){var wt=store.settings.wordRemindTime||'20:00';if(hm===wt){ensureDeck();if(deckDone()<deckTotal())fire('word','该背单词啦 📚 · 今日还差 '+(deckTotal()-deckDone())+' 个就认完');}}
   store.tasks.forEach(function(t){if(t.done||!t.remindAt)return;if(t.remindAt.slice(0,16)===ymd+'T'+hm)fire('task-'+t.id,(t.title||t.customer||'任务')+' · 到点提醒');});
   (store.reminders||[]).forEach(function(r){if(!r.on)return;if(r.repeat==='once'){if((r.date+'T'+r.time)===ymd+'T'+hm)fire('rem-'+r.id,r.label+' · 提醒');}else{if(r.time===hm)fire('rem-'+r.id,r.label+' · 每日提醒');}});
   var ks=Object.keys(log);if(ks.length>3){ks.sort();ks.slice(0,ks.length-3).forEach(function(k){delete log[k];});save('fired',log);}
@@ -2011,6 +2077,10 @@ function renderReminders(){
   h+='<div class="rem-block"><h4>22:10 别熬夜</h4>';
   if(store.settings.nightOn){h+='<div class="rem-row"><span class="rt">'+esc(store.settings.nightTime)+'</span><div class="rl"><b>每天提醒入眠</b><small>已开启</small></div><button class="mini2" data-action="set-night">改时间</button></div>';}
   else{h+='<div class="rem-row off"><span class="rt">关</span><div class="rl"><b>熬夜提醒已关闭</b><small>点“改时间”可重新开启</small></div><button class="mini2" data-action="set-night">设置</button></div>';}
+  h+='</div>';
+  h+='<div class="rem-block"><h4>背单词提醒</h4>';
+  if(store.settings.wordRemindOn!==false){h+='<div class="rem-row"><span class="rt">'+esc(store.settings.wordRemindTime||'20:00')+'</span><div class="rl"><b>每天提醒背单词</b><small>已开启 · 封顶 '+store.settings.wordLimit+' 个/天</small></div><button class="mini2" data-action="set-night">改</button></div>';}
+  else{h+='<div class="rem-row off"><span class="rt">关</span><div class="rl"><b>背单词提醒已关闭</b></div><button class="mini2" data-action="set-night">设置</button></div>';}
   h+='</div>';
   var tr=store.tasks.filter(function(t){return !t.done&&t.remindAt;});
   h+='<div class="rem-block"><h4>任务提醒（'+tr.length+'）</h4>';
