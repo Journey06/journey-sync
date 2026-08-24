@@ -685,7 +685,7 @@ var store={
   reminders:load('reminders',[]),
   deck:load('deck',null),
   streak:load('streak',{lastDate:null,count:0,total:0}),
-  settings:Object.assign({nightOn:true,nightTime:'22:10',wordLimit:10,newPerDay:5,soundOn:true,speechRate:0.6,wordRemindOn:true,wordRemindTime:'20:00',syncEnabled:false,syncToken:'',syncServer:'',syncRev:0},load('settings',{}))
+  settings:Object.assign({nightOn:true,nightTime:'22:10',wordLimit:10,newPerDay:3,soundOn:true,speechRate:0.6,wordRemindOn:true,wordRemindTime:'20:00',syncEnabled:false,syncToken:'',syncServer:'',syncRev:0},load('settings',{}))
 };
 
 /* ===== Toast ===== */
@@ -937,13 +937,12 @@ function rateWord(id,lv){
       w.graduated=false;        // 若已毕业但这次没认出 → 退回学习中，重新刷
       w.gradNext=null;
     }
-    // 排到队尾循环，当天还要再背（循环后补认只完成、不累计）
+    // 间隔 2 个词后再次出现：移出原位，插到后面第 2 个位置再检测（当天 spaced repetition）
     if(d.ids.indexOf(id)>=0 && d.done.indexOf(id)<0){
       var arr=d.ids, p=arr.indexOf(id);
-      if(p>=0){arr.splice(p,1);arr.push(id);}
+      if(p>=0){arr.splice(p,1);var at=Math.min(p+2,arr.length);arr.splice(at,0,id);}
     }
   }
-  checkIn();
   save('words',store.words);
   save('deck',store.deck);
   renderWords();renderLife();
@@ -971,7 +970,11 @@ function buildDeck(){
   // 复习池：已学过（firstSeen 不为空）且未毕业、连续认识<5 天，每天必复习 + 已毕业且到周复习日
   var learning=store.words.filter(function(w){return w.firstSeen && !w.graduated && (w.recogStreak||0)<GRAD_DAYS;});
   var gradDue=store.words.filter(function(w){return w.graduated && (!w.gradNext||w.gradNext<=td);});
-  learning.sort(function(a,b){return (a.recogStreak||0)-(b.recogStreak||0)||(a.lastReview||'').localeCompare(b.lastReview||'');});
+  learning.sort(function(a,b){
+    var wa=(a.lastRate===2)?1:0, wb=(b.lastRate===2)?1:0; // 上次没「认识」的优先排前面（前一天不认识/不熟悉的先复习）
+    if(wa!==wb)return wa-wb;
+    return (a.recogStreak||0)-(b.recogStreak||0)||(a.lastReview||'').localeCompare(b.lastReview||'');
+  });
   gradDue.sort(function(a,b){return (a.gradNext||td).localeCompare(b.gradNext||td);});
   var reviewPool=learning.concat(gradDue);
   var reviewIds=reviewPool.map(function(w){return w.id;});
@@ -1005,6 +1008,16 @@ function checkIn(){
   s.total=(s.total||0)+1;
   s.lastDate=td;
   store.streak=s;save('streak',s);
+}
+function doWordCheckIn(){
+  ensureDeck();
+  var total=deckTotal(), done=deckDone();
+  if(total===0){showToast('今天还没有单词可背');return;}
+  if(done<total){showToast('还有 '+(total-done)+' 个单词没背完，背完才能打卡');return;}
+  if(store.streak&&store.streak.lastDate===today()){showToast('今天已经打卡啦 ✓');return;}
+  checkIn();
+  renderWords();renderLife();
+  showToast('打卡成功 · 连续 '+((store.streak&&store.streak.count)||0)+' 天 · 累积 '+((store.streak&&store.streak.total)||0)+' 天');
 }
 function reshuffleDeck(){
   if(!store.deck)return;
@@ -1341,9 +1354,11 @@ function renderLife(){
   var gradN=store.words.filter(function(w){return w.graduated;}).length;
   var fitWeek=fitnessCountThisWeek();
   var streakN=(store.streak&&store.streak.count)||0;
+  var totalN2=(store.streak&&store.streak.total)||0;
   var h='';
   h+='<div class="stat"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/></svg>今日单词</div><div class="num">'+doneN+'<small>/ '+totalN+'</small></div></div>';
   h+='<div class="stat"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 5 5.6.8-4 4 1 5.6L12 22l-5-2.4 1-5.6-4-4 5.6-.8z"/></svg>连续签到</div><div class="num">'+streakN+'<small>天</small></div></div>';
+  h+='<div class="stat"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>累积打卡</div><div class="num">'+totalN2+'<small>天</small></div></div>';
   h+='<div class="stat"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>已掌握</div><div class="num">'+gradN+'<small>个</small></div></div>';
   h+='<div class="stat"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 22a4 4 0 100-8 4 4 0 000 8zM10 4l-7 7 4 4 7-7-4-4z"/></svg>本周健身</div><div class="num">'+fitWeek+'<small>/ 4</small></div></div>';
   $('lifeStats').innerHTML=h;
@@ -1359,17 +1374,22 @@ function renderWords(){
   if(total===0){
     h+=emptyHtml('词库还是空的','点“+ 加词”添加俄语单词，或从行业词库导入');
   }else if(ids.length===0){
+    var alreadyIn=(store.streak&&store.streak.lastDate===today());
     h+='<div style="text-align:center;padding:28px 14px">'
       +'<div style="font-size:42px">🎉</div>'
       +'<div style="font-size:16px;font-weight:800;color:var(--navy);margin:10px 0">今天 '+total+' 个单词全部认完啦！</div>'
-      +'<div style="font-size:13px;color:var(--mut)">已连续坚持 <b style="color:var(--green)">'+((store.streak&&store.streak.count)||0)+'</b> 天 · 连续 5 天首次就「认识」即毕业，之后每周复习一次</div>'
-      +'<button class="btn btn-ghost" data-action="reshuffle" style="margin-top:16px">打乱顺序再背一遍</button></div>';
+      +'<div style="font-size:13px;color:var(--mut);margin-bottom:14px">已连续坚持 <b style="color:var(--green)">'+((store.streak&&store.streak.count)||0)+'</b> 天 · 累积 <b style="color:var(--navy)">'+((store.streak&&store.streak.total)||0)+'</b> 天</div>'
+      + (alreadyIn
+          ? '<button class="btn btn-primary" disabled style="opacity:.55;cursor:default">今天已打卡 ✓</button>'
+          : '<button class="btn btn-primary" data-action="word-checkin">✅ 今日打卡（背完 '+total+' 个单词）</button>')
+      +'<button class="btn btn-ghost" data-action="reshuffle" style="margin-top:10px">打乱顺序再背一遍</button></div>';
   }else{
     var pct=total?Math.round(done/total*100):0;
     var dk=store.deck||{}; var newN=(dk.newIds||[]).length, revN=Math.max(0,total-newN);
     h+='<div style="margin-bottom:10px">'
-      +'<div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut);margin-bottom:6px"><span>今日进度 <b style="color:var(--navy)">'+done+' / '+total+'</b></span><span>'+newN+' 新 + '+revN+' 复习 · 不认识排到队尾循环</span></div>'
-      +'<div style="height:8px;background:var(--line);border-radius:6px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,var(--navy),var(--green));transition:.3s"></div></div></div>';
+      +'<div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut);margin-bottom:6px"><span>今日进度 <b style="color:var(--navy)">'+done+' / '+total+'</b></span><span>'+newN+' 新 + '+revN+' 复习 · 不认识间隔2个词后重现</span></div>'
+      +'<div style="height:8px;background:var(--line);border-radius:6px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,var(--navy),var(--green));transition:.3s"></div></div></div>'
+      +'<div style="font-size:12.5px;color:var(--muter);margin:10px 0 2px">背完这 '+total+' 个才能打卡 · 还需 <b style="color:var(--navy)">'+(total-done)+'</b> 个</div>';
     var rates=[['0.75','慢'],['0.6','很慢'],['0.45','最慢']];
     var sr=store.settings.speechRate||0.6;
     h+='<div style="display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:12.5px;color:var(--mut)">朗读语速'
@@ -1574,7 +1594,7 @@ function showNightForm(){
   h+='<hr style="border:none;border-top:1px solid var(--line);margin:16px 0">';
   h+='<div class="field"><label>背单词提醒时间</label><input type="time" name="wordRemindTime" value="'+esc(store.settings.wordRemindTime||'20:00')+'"></div>';
   h+='<div class="field"><label class="checkbox-line"><input type="checkbox" name="wordRemindOn" '+(store.settings.wordRemindOn!==false?'checked':'')+'>启用背单词提醒（每天弹窗，手机 APP 也弹）</label></div>';
-  h+='<div style="font-size:12px;color:var(--mut);margin-top:8px">到点会播放轻柔铃声 + 弹窗提醒（页面需保持打开）。每天 '+store.settings.newPerDay+' 个新词 + 复习词，不认识排到队尾循环；连续 5 天首次就「认识」才毕业，之后每周复习一次。</div>';
+  h+='<div style="font-size:12px;color:var(--mut);margin-top:8px">到点会播放轻柔铃声 + 弹窗提醒（页面需保持打开）。每天 '+store.settings.newPerDay+' 个新词 + 复习词，不认识间隔 2 个词后重现；连续 5 天首次就「认识」才毕业，之后每周复习一次。</div>';
   h+='<div class="row" style="margin-top:14px"><button class="btn btn-primary" data-action="submit-night">保存</button><button class="btn btn-ghost" data-action="close-modal">取消</button></div>';
   h+='</form>';
   openModal('提醒设置',h);
@@ -1946,6 +1966,7 @@ document.addEventListener('click',function(e){
   else if(a==='pick-words')renderWords();
   else if(a==='rate')rateWord(id,+el.getAttribute('data-lv'));
   else if(a==='reshuffle')reshuffleDeck();
+  else if(a==='word-checkin')doWordCheckIn();
   else if(a==='fit'){
     var d=el.getAttribute('data-date');
     var i=store.fitness.indexOf(d);
