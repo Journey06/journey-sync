@@ -390,6 +390,11 @@ footer{position:relative;z-index:2;max-width:1320px;margin:6px auto 0;padding:0 
  <div class="shell">
   <aside class="sidebar">
     <div class="side-grp">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      每日学习
+    </div>
+    <button class="side-item" data-tab="words"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg><span>背单词</span><span class="cnt" data-cnt="words"></span></button>
+    <div class="side-grp">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-4V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v3H4a1 1 0 00-1 1v11a2 2 0 002 2h14a2 2 0 002-2V8a1 1 0 00-1-1z"/></svg>
       职场板块
     </div>
@@ -441,8 +446,25 @@ footer{position:relative;z-index:2;max-width:1320px;margin:6px auto 0;padding:0 
     <div class="today-body" id="todayBody"></div>
    </section>
 
+   <!-- 背单词（置顶） -->
+   <section class="panel active" id="panel-words">
+    <div class="stat-grid" id="wordStats"></div>
+
+    <div class="card">
+     <div class="card-h">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+       <div class="ttl"><b>俄语单词打卡</b><small>广告类·工厂·外贸业务员日常 · 遗忘曲线 · 每天3新+7复习</small></div>
+       <div class="act">
+        <button class="btn btn-ghost" data-action="add-word"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>添加单词</button>
+        <button class="btn btn-primary" data-action="pick-words"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-6.2-8.55"/><path d="M21 3v6h-6"/></svg>今日推荐</button>
+       </div>
+     </div>
+     <div class="card-body" id="wordsBody"></div>
+    </div>
+   </section>
+
    <!-- 业务跟进 -->
-   <section class="panel active" id="panel-deals">
+   <section class="panel" id="panel-deals">
     <div class="card">
      <div class="card-h">
        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
@@ -573,18 +595,6 @@ footer{position:relative;z-index:2;max-width:1320px;margin:6px auto 0;padding:0 
    <!-- 个人生活 -->
    <section class="panel" id="panel-life">
     <div class="stat-grid" id="lifeStats"></div>
-
-    <div class="card">
-     <div class="card-h">
-       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
-       <div class="ttl"><b>俄语单词打卡</b><small>广告类·工厂·外贸业务员日常 · 遗忘曲线 · 上限10个/天</small></div>
-       <div class="act">
-        <button class="btn btn-ghost" data-action="add-word"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>添加单词</button>
-        <button class="btn btn-primary" data-action="pick-words"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-6.2-8.55"/><path d="M21 3v6h-6"/></svg>今日推荐</button>
-       </div>
-     </div>
-     <div class="card-body" id="wordsBody"></div>
-    </div>
 
     <div class="card">
      <div class="card-h">
@@ -1082,14 +1092,16 @@ function renderAll(){
   renderFinance();
   renderAftersale();
   renderReview();
+  renderWordStats();
   renderLife();
+  renderWords();
   renderBackupTip();
   renderNight();
   renderReminders();
   renderCover();
 }
 function renderTabs(){
-  var map={deals:taskCount('deals'),projects:openProjectCount(),finance:taskCount('finance'),aftersale:taskCount('aftersale'),review:'',life:'',remind:activeReminderCount()};
+  var map={words:wordDeckRemain(),deals:taskCount('deals'),projects:openProjectCount(),finance:taskCount('finance'),aftersale:taskCount('aftersale'),review:'',life:'',remind:activeReminderCount()};
   document.querySelectorAll('[data-cnt]').forEach(function(el){
     var k=el.getAttribute('data-cnt');
     el.textContent=map[k]||'';
@@ -1097,7 +1109,8 @@ function renderTabs(){
   document.querySelectorAll('.side-item').forEach(function(el){el.classList.toggle('active',el.getAttribute('data-tab')===currentTab);});
   document.querySelectorAll('.panel').forEach(function(p){p.classList.toggle('active',p.id==='panel-'+currentTab);});
   var bt='';
-  [{k:'deals',l:'业务',ic:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>'},
+  [{k:'words',l:'背单词',ic:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>'},
+   {k:'deals',l:'业务',ic:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>'},
    {k:'projects',l:'项目',ic:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3zM14 3h7v7h-7z"/></svg>'},
    {k:'finance',l:'收款',ic:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg>'},
    {k:'aftersale',l:'售后',ic:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>'},
@@ -1132,10 +1145,10 @@ function renderToday(){
   ensureDeck();
   var remain=activeDeck().length, totalN=deckTotal();
   if(totalN>0){
-    items.push({tag:'life',tagTxt:'俄语单词',
+    items.push({tag:'words',tagTxt:'俄语单词',
       title:'今日单词还差 '+remain+' / '+totalN+' 个',
-      meta:'每天 '+store.settings.newPerDay+' 新 + 复习 · 连续 5 天首次就「认识」即毕业',overdue:false,
-      action:'goto',actionId:'life'});
+      meta:'每天 '+store.settings.newPerDay+' 新 + 复习 · 背完才能打卡',overdue:false,
+      action:'goto',actionId:'words'});
   }
   // 客户跟进提醒：距上次跟进满 7 天的客户，红色置顶
   var sugs=getFollowSuggestions().filter(function(s){return s.days>=7;});
@@ -1346,13 +1359,12 @@ function renderReview(){
   $('historyBody').innerHTML=hh;
 }
 
-/* ===== Render Life ===== */
-function renderLife(){
+/* ===== Word Stats (独立背单词标签顶部) ===== */
+function wordDeckRemain(){ensureDeck();var t=deckTotal(),d=deckDone();var r=Math.max(0,t-d);return r?('剩'+r):'';}
+function renderWordStats(){
   ensureDeck();
   var doneN=deckDone(), totalN=deckTotal();
-  var knownRate=store.words.length?Math.round(store.words.filter(function(w){return (w.level||0)>=2;}).length/store.words.length*100):0;
   var gradN=store.words.filter(function(w){return w.graduated;}).length;
-  var fitWeek=fitnessCountThisWeek();
   var streakN=(store.streak&&store.streak.count)||0;
   var totalN2=(store.streak&&store.streak.total)||0;
   var h='';
@@ -1360,9 +1372,15 @@ function renderLife(){
   h+='<div class="stat"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 5 5.6.8-4 4 1 5.6L12 22l-5-2.4 1-5.6-4-4 5.6-.8z"/></svg>连续签到</div><div class="num">'+streakN+'<small>天</small></div></div>';
   h+='<div class="stat"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>累积打卡</div><div class="num">'+totalN2+'<small>天</small></div></div>';
   h+='<div class="stat"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>已掌握</div><div class="num">'+gradN+'<small>个</small></div></div>';
+  $('wordStats').innerHTML=h;
+}
+
+/* ===== Render Life ===== */
+function renderLife(){
+  var fitWeek=fitnessCountThisWeek();
+  var h='';
   h+='<div class="stat"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 22a4 4 0 100-8 4 4 0 000 8zM10 4l-7 7 4 4 7-7-4-4z"/></svg>本周健身</div><div class="num">'+fitWeek+'<small>/ 4</small></div></div>';
   $('lifeStats').innerHTML=h;
-  renderWords();
   renderFitness();
   renderNightSettings();
 }
@@ -1671,7 +1689,7 @@ function saveReport(){
 }
 
 /* ===== Current tab ===== */
-var currentTab='deals';
+var currentTab='words';
 function switchTab(key){
   if(batchMode){batchMode=false;batchSel={};document.body.classList.remove('batch-active');$('batchBar').classList.add('hide');updateBatchBar();}
   currentTab=key;
