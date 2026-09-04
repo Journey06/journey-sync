@@ -132,6 +132,15 @@ header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;ba
 .tday-tag.aftersale{background:var(--orangeSoft);color:var(--orange)}
 .tday-tag.life{background:#F2E8FA;color:#6D45B8}
 .tday-tag.over{background:var(--redSoft);color:var(--red)}
+.tday-tag.follow{background:#FFE6D6;color:#B25808}
+.tday-ops{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-left:auto}
+.tday-ops .mini2{padding:5px 10px;font-size:11.5px;min-height:32px;border-radius:8px}
+.tday-ops .mini2.ok{background:var(--greenSoft);border-color:#cfe6d2;color:var(--green)}
+.tday-ops .mini2.snz{background:#FFF4E0;border-color:#f3d9aa;color:#B25808}
+.tday-ops .snooze-menu{position:absolute;z-index:5;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.08);padding:6px;display:flex;flex-direction:column;gap:4px;min-width:120px;right:0;top:100%;margin-top:4px}
+.tday-ops .snooze-menu button{font-size:12px;padding:6px 10px;border:none;background:transparent;text-align:left;border-radius:6px;cursor:pointer;color:var(--ink)}
+.tday-ops .snooze-menu button:hover{background:var(--bg2)}
+.tday-ops .snooze-wrap{position:relative}
 .tday-main{flex:1;min-width:150px}
 .tday-main b{font-size:14px;display:block}
 .tday-main span{font-size:12px;color:var(--mut)}
@@ -695,6 +704,9 @@ var store={
   reminders:load('reminders',[]),
   deck:load('deck',null),
   streak:load('streak',{lastDate:null,count:0,total:0}),
+  // 客户跟进索引：客户名 → {lastFollow:'YYYY-MM-DD', nextFollowAt:'YYYY-MM-DD'}
+  // 用于「✓ 已跟进」消除项 + 「N 天后提醒」自动回到列表
+  followIndex:load('followIndex',{}),
   settings:Object.assign({nightOn:true,nightTime:'22:10',wordLimit:10,newPerDay:3,soundOn:true,speechRate:0.6,wordRemindOn:true,wordRemindTime:'20:00',syncEnabled:false,syncToken:'',syncServer:'',syncRev:0},load('settings',{}))
 };
 
@@ -1150,24 +1162,46 @@ function renderToday(){
       meta:'每天 '+store.settings.newPerDay+' 新 + 复习 · 背完才能打卡',overdue:false,
       action:'goto',actionId:'words'});
   }
-  // 客户跟进提醒：距上次跟进满 7 天的客户，红色置顶
-  var sugs=getFollowSuggestions().filter(function(s){return s.days>=7;});
+  // 客户跟进提醒：距上次跟进满 7 天，或设了「X 天后提醒」已到期的客户
+  var sugs=getFollowSuggestions().filter(function(s){return s.days>=7 || s.snoozed;});
   sugs.forEach(function(s){
+    var snoozeTxt=s.nextAt?' · 已设 '+s.nextAt+' 提醒':'';
     items.push({tag:'follow',tagTxt:'客户跟进',
-      title:s.customer+' · 已 '+s.days+' 天未跟进',
-      meta:s.reason+' · 去业务跟进生成完整待办',overdue:true,
-      action:'goto',actionId:'deals'});
+      title:s.customer+' · 已 '+s.days+' 天未跟进'+snoozeTxt,
+      meta:s.reason+' · '+(s.snoozed?'提醒到期，去处理':'去业务跟进生成完整待办'),
+      overdue:true,
+      action:'follow-ops',actionId:s.customer});
   });
-  items.sort(function(a,b){return (b.overdue?1:0)-(a.overdue?1:0);});
+  items.sort(function(a,b){
+    if((b.overdue?1:0)!==(a.overdue?1:0))return (b.overdue?1:0)-(a.overdue?1:0);
+    return (a.tag==='follow'?0:1)-(b.tag==='follow'?0:1);
+  });
   $('todayCount').textContent='共 '+items.length+' 项';
   var h='<div class="tday-empty">全部处理完毕，今天很稳</div>';
   if(items.length>0){
     h='';
     items.forEach(function(it){
       var cls=it.overdue?'over':it.tag;
-      var btn=it.action==='toggle'?
-        '<button class="task-check" data-action="toggle" data-id="'+it.actionId+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></button>':
-        '<button class="btn btn-primary" data-action="goto" data-tab="'+it.actionId+'" style="font-size:12px;padding:6px 12px">去看 →</button>';
+      var btn;
+      if(it.action==='follow-ops'){
+        btn='<div class="tday-ops">'
+          +'<button class="mini2 ok" data-action="mark-followed" data-customer="'+esc(it.actionId)+'" title="标记为已跟进，7 天内不再提醒"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;vertical-align:-2px;margin-right:3px"><path d="M20 6L9 17l-5-5"/></svg>已跟进</button>'
+          +'<span class="snooze-wrap">'
+          +'<button class="mini2 snz" data-action="snooze-follow" data-customer="'+esc(it.actionId)+'">📅 N天后</button>'
+          +'<div class="snooze-menu" style="display:none" data-snooze-menu>'
+          +'<button data-action="snooze-follow" data-customer="'+esc(it.actionId)+'" data-days="3">3 天后提醒</button>'
+          +'<button data-action="snooze-follow" data-customer="'+esc(it.actionId)+'" data-days="7">一周后（推荐）</button>'
+          +'<button data-action="snooze-follow" data-customer="'+esc(it.actionId)+'" data-days="14">两周后</button>'
+          +'<button data-action="snooze-follow" data-customer="'+esc(it.actionId)+'" data-days="30">一个月后</button>'
+          +'<button data-action="snooze-follow" data-customer="'+esc(it.actionId)+'" data-days="60">两个月后</button>'
+          +'</div></span>'
+          +'<button class="btn btn-primary" data-action="goto" data-tab="deals" style="font-size:11.5px;padding:5px 10px">详情</button>'
+          +'</div>';
+      } else {
+        btn=it.action==='toggle'?
+          '<button class="task-check" data-action="toggle" data-id="'+it.actionId+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></button>':
+          '<button class="btn btn-primary" data-action="goto" data-tab="'+it.actionId+'" style="font-size:12px;padding:6px 12px">去看 →</button>';
+      }
       h+='<div class="tday-item"><span class="tday-tag '+cls+'">'+esc(it.tagTxt)+'</span><div class="tday-main"><b>'+esc(it.title)+'</b><span>'+it.meta+'</span></div>'+btn+'</div>';
     });
   }
@@ -1178,6 +1212,7 @@ function modLabel(m){return (MODULES[m]&&MODULES[m].label)||m;}
 function getFollowSuggestions(){
   var td=today();
   var map={};
+  // 1) 先从 tasks / projects 聚合每个客户的 lastFollow 推断值
   store.tasks.forEach(function(t){
     var c=(t.customer||'').trim();
     if(!c)return;
@@ -1192,10 +1227,21 @@ function getFollowSuggestions(){
     if(!map[c])map[c]={customer:c,tasks:[],projects:[],lastFollow:null};
     map[c].projects.push(p);
   });
+  // 2) followIndex 里的 lastFollow（用户最近一次明确「已跟进 / N天后」）优先级更高
+  Object.keys(store.followIndex||{}).forEach(function(c){
+    if(!c)return;
+    if(!map[c])map[c]={customer:c,tasks:[],projects:[],lastFollow:null};
+    var fi=store.followIndex[c];
+    if(fi&&fi.lastFollow)map[c].lastFollow=fi.lastFollow;
+  });
   var out=[];
   Object.keys(map).forEach(function(c){
     var o=map[c];
+    var fi=(store.followIndex&&store.followIndex[c])||null;
+    var nextAt=fi&&fi.nextFollowAt?fi.nextFollowAt:null;
     var days=diffDays(td,o.lastFollow||td);
+    // snoozed=true：nextFollowAt 已到（≤ 今天）或已过期
+    var snoozed=nextAt && diffDays(nextAt,td)<=0;
     var openT=o.tasks.filter(function(t){return !t.done;});
     var overT=o.tasks.filter(function(t){return isOverdue(t.dueAt,t.done);});
     var hasQuote=openT.some(function(t){return t.module==='deals';});
@@ -1220,7 +1266,14 @@ function getFollowSuggestions(){
       reason='常规关系维护';
       suggestion='从【关系维护】出发，分享新品/案例或节日问候';
     }
-    out.push({customer:c,days:days,reason:reason,suggestion:suggestion,open:openT.length,over:overT.length});
+    var nextTxt=null;
+    if(nextAt){
+      var nd=diffDays(td,nextAt);
+      nextTxt=nd===0?'今天':nd===1?'明天':nd>1?(nd+' 天后'):'已逾期 '+Math.abs(nd)+' 天';
+    }
+    out.push({customer:c,days:days,reason:reason,suggestion:suggestion,
+      open:openT.length,over:overT.length,
+      nextAt:nextAt,nextTxt:nextTxt,snoozed:snoozed});
   });
   return out;
 }
@@ -1861,7 +1914,7 @@ function speak(text){
 }
 
 /* ===== Auto cross-device sync (server-backed) ===== */
-var SYNC_KEYS=['tasks','projects','words','fitness','reports','reminders','deck','streak'];
+var SYNC_KEYS=['tasks','projects','words','fitness','reports','reminders','deck','streak','followIndex'];
 var syncState={enabled:false,token:'',localRev:0,applying:false,pushTimer:null,timer:null};
 function syncBase(){return (store.settings.syncServer||'').replace(/\/+$/,'')||'';}
 function genToken(){var s='';var c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';for(var i=0;i<12;i++)s+=c[Math.floor(Math.random()*c.length)];return s;}
@@ -1947,6 +2000,12 @@ document.addEventListener('change',function(e){
 
 /* ===== Event delegation ===== */
 document.addEventListener('click',function(e){
+  // 点在 .snooze-wrap 之外时，关闭所有展开的「N天后」菜单
+  if(!e.target.closest('.snooze-wrap')){
+    document.querySelectorAll('[data-snooze-menu]').forEach(function(m){m.style.display='none';});
+  }
+});
+document.addEventListener('click',function(e){
   var el=e.target.closest('[data-action],[data-tab],[data-review-tab]');
   if(!el)return;
   var tab=el.getAttribute('data-tab');
@@ -2007,6 +2066,33 @@ document.addEventListener('click',function(e){
   }
   else if(a==='copy')copyText(el.getAttribute('data-id'));
   else if(a==='gen-followup')showFollowupModal();
+  else if(a==='mark-followed'){
+    var cn=el.getAttribute('data-customer')||'';
+    if(!cn)return;
+    if(!store.followIndex)store.followIndex={};
+    store.followIndex[cn]={lastFollow:today(),nextFollowAt:null};
+    save('followIndex',store.followIndex);
+    renderToday();renderDeals();
+    showToast('已跟进：'+cn+' · 7 天内不再提醒');
+  }
+  else if(a==='snooze-follow'){
+    var cn2=el.getAttribute('data-customer')||'';
+    var days=parseInt(el.getAttribute('data-days')||'0',10);
+    if(!cn2)return;
+    // 第一次点「📅 N天后」主按钮 → 展开菜单（无 data-days）
+    if(!days){
+      var wrap=el.parentElement;
+      var menu=wrap?wrap.querySelector('[data-snooze-menu]'):null;
+      if(menu){menu.style.display=menu.style.display==='block'?'none':'block';}
+      return;
+    }
+    var nextDate=addDays(today(),days);
+    if(!store.followIndex)store.followIndex={};
+    store.followIndex[cn2]={lastFollow:today(),nextFollowAt:fmtDate(nextDate)};
+    save('followIndex',store.followIndex);
+    renderToday();renderDeals();
+    showToast('已设：'+cn2+' · '+days+' 天后（'+fmtDate(nextDate)+'）自动回到列表');
+  }
   else if(a==='save-report')saveReport();
   else if(a==='export')exportAll();
   else if(a==='import')importAll();
