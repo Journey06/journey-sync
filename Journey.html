@@ -710,6 +710,25 @@ var store={
   settings:Object.assign({nightOn:true,nightTime:'22:10',wordLimit:10,newPerDay:3,soundOn:true,speechRate:0.6,wordRemindOn:true,wordRemindTime:'20:00',syncEnabled:false,syncToken:'',syncServer:'',syncRev:0},load('settings',{}))
 };
 
+/* 老数据迁移：把「连续/累积计数器」补成「打卡日期集合」
+   旧结构 {lastDate,count,total} → 新结构增加 dates[]，用于两端同步合并取并集 */
+(function migrateStreak(){
+  var s=store.streak;
+  if(!s||Array.isArray(s.dates))return;
+  s.dates=[];
+  if(s.lastDate){
+    var n=Math.max(1,parseInt(s.count,10)||1);
+    var d=new Date(s.lastDate+'T00:00:00');
+    for(var i=0;i<n;i++){
+      var y=d.getFullYear(),m=('0'+(d.getMonth()+1)).slice(-2),dd=('0'+d.getDate()).slice(-2);
+      s.dates.push(y+'-'+m+'-'+dd);
+      d.setDate(d.getDate()-1);
+    }
+  }
+  s.dates.sort();
+  try{save('streak',s);}catch(e){}
+})();
+
 /* ===== Toast ===== */
 var toastTimer=null;
 function showToast(msg,kind){
@@ -1023,23 +1042,47 @@ function activeDeck(){return store.deck?(store.deck.ids||[]).filter(function(i){
 function deckTotal(){return store.deck?(store.deck.ids||[]).length:0;}
 function deckDone(){return store.deck?((store.deck.done||[]).length):0;}
 function checkIn(){
-  var s=store.streak||{lastDate:null,count:0,total:0}, td=today();
-  if(s.lastDate===td)return;
-  if(s.lastDate&&diffDays(td,s.lastDate)===1)s.count=(s.count||0)+1;
-  else s.count=1;
-  s.total=(s.total||0)+1;
+  var s=store.streak||{lastDate:null,count:0,total:0,dates:[]}, td=today();
+  if(!Array.isArray(s.dates))s.dates=[];
+  // 往「打卡日期集合」里加今天（天然去重，两端同步合并取并集不会重复计数）
+  if(s.dates.indexOf(td)<0)s.dates.push(td);
+  s.dates.sort();
   s.lastDate=td;
+  s.count=calcStreakCount();      // 由日期集合推导，两端算法一致
+  s.total=s.dates.length;
   store.streak=s;save('streak',s);
 }
+/* ===== 签到日期集合：手机 + 电脑合并取并集，永不冲突 ===== */
+function streakDates(){
+  var s=store.streak||{};
+  if(!Array.isArray(s.dates))s.dates=[];
+  return s.dates;
+}
+function hasCheckedIn(td){
+  var d=streakDates(), t=td||today();
+  return d.indexOf(t)>=0;
+}
+// 连续天数：从今天（今天没打卡则从昨天）往回数，集合里连续有多少天
+function calcStreakCount(){
+  var dts=streakDates(), td=today();
+  if(dts.length===0)return 0;
+  var set={}; dts.forEach(function(x){set[x]=1;});
+  var cur=new Date(td+'T00:00:00');
+  if(!set[td])cur.setDate(cur.getDate()-1);   // 今天还没背 → 从昨天算，保持连续
+  var n=0;
+  while(set[fmtDate(cur)]){n++;cur.setDate(cur.getDate()-1);}
+  return n;
+}
+function calcStreakTotal(){return streakDates().length;}
 function doWordCheckIn(){
   ensureDeck();
   var total=deckTotal(), done=deckDone();
   if(total===0){showToast('今天还没有单词可背');return;}
   if(done<total){showToast('还有 '+(total-done)+' 个单词没背完，背完才能打卡');return;}
-  if(store.streak&&store.streak.lastDate===today()){showToast('今天已经打卡啦 ✓');return;}
+  if(hasCheckedIn()){showToast('今天已经打卡啦 ✓');return;}   // 按日期集合判断，手机打过电脑也算
   checkIn();
   renderWords();renderLife();
-  showToast('打卡成功 · 连续 '+((store.streak&&store.streak.count)||0)+' 天 · 累积 '+((store.streak&&store.streak.total)||0)+' 天');
+  showToast('打卡成功 · 连续 '+calcStreakCount()+' 天 · 累积 '+calcStreakTotal()+' 天');
 }
 function reshuffleDeck(){
   if(!store.deck)return;
@@ -1418,8 +1461,8 @@ function renderWordStats(){
   ensureDeck();
   var doneN=deckDone(), totalN=deckTotal();
   var gradN=store.words.filter(function(w){return w.graduated;}).length;
-  var streakN=(store.streak&&store.streak.count)||0;
-  var totalN2=(store.streak&&store.streak.total)||0;
+  var streakN=calcStreakCount();      // 由打卡日期集合推导（两端一致）
+  var totalN2=calcStreakTotal();
   var h='';
   h+='<div class="stat"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/></svg>今日单词</div><div class="num">'+doneN+'<small>/ '+totalN+'</small></div></div>';
   h+='<div class="stat"><div class="lb"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 5 5.6.8-4 4 1 5.6L12 22l-5-2.4 1-5.6-4-4 5.6-.8z"/></svg>连续签到</div><div class="num">'+streakN+'<small>天</small></div></div>';
@@ -1445,11 +1488,11 @@ function renderWords(){
   if(total===0){
     h+=emptyHtml('词库还是空的','点“+ 加词”添加俄语单词，或从行业词库导入');
   }else if(ids.length===0){
-    var alreadyIn=(store.streak&&store.streak.lastDate===today());
+    var alreadyIn=hasCheckedIn();
     h+='<div style="text-align:center;padding:28px 14px">'
       +'<div style="font-size:42px">🎉</div>'
       +'<div style="font-size:16px;font-weight:800;color:var(--navy);margin:10px 0">今天 '+total+' 个单词全部认完啦！</div>'
-      +'<div style="font-size:13px;color:var(--mut);margin-bottom:14px">已连续坚持 <b style="color:var(--green)">'+((store.streak&&store.streak.count)||0)+'</b> 天 · 累积 <b style="color:var(--navy)">'+((store.streak&&store.streak.total)||0)+'</b> 天</div>'
+      +'<div style="font-size:13px;color:var(--mut);margin-bottom:14px">已连续坚持 <b style="color:var(--green)">'+calcStreakCount()+'</b> 天 · 累积 <b style="color:var(--navy)">'+calcStreakTotal()+'</b> 天</div>'
       + (alreadyIn
           ? '<button class="btn btn-primary" disabled style="opacity:.55;cursor:default">今天已打卡 ✓</button>'
           : '<button class="btn btn-primary" data-action="word-checkin">✅ 今日打卡（背完 '+total+' 个单词）</button>')
@@ -1939,6 +1982,49 @@ function pushSync(){
     })
     .catch(function(){setSyncBadge('err','未连接');});
 }
+/* ===== 智能合并：解决「手机 + 电脑各背各的，整体覆盖会丢进度」 ===== */
+// 签到日期：并集（两边打过的卡都算，去重不重复计数）
+function mergeStreak(local,remote){
+  var a=(local&&Array.isArray(local.dates)&&local.dates.length)?local.dates:(local&&local.lastDate?[local.lastDate]:[]);
+  var b=(remote&&Array.isArray(remote.dates)&&remote.dates.length)?remote.dates:(remote&&remote.lastDate?[remote.lastDate]:[]);
+  var set={}; a.concat(b).forEach(function(d){if(d)set[d]=1;});
+  var dates=Object.keys(set).sort();
+  return {lastDate:dates.length?dates[dates.length-1]:null, dates:dates,
+          count:0, total:dates.length};  // count 渲染时由集合推导，保证两端一致
+}
+// 今日牌组：已背单词取并集（手机背 A、B，电脑背 C、D → 合起来都算背过）
+function mergeDeck(local,remote){
+  if(!remote)return local;
+  if(!local)return remote;
+  var la=Array.isArray(local.done)?local.done:[];
+  var lb=Array.isArray(remote.done)?remote.done:[];
+  var set={}; la.concat(lb).forEach(function(x){set[x]=1;});
+  var merged=Object.assign({},local);
+  merged.done=Object.keys(set);
+  // 牌组本身取「更新的那天」的那份，避免跨天串味
+  var ld=local.date||'', rd=remote.date||'';
+  if(rd>ld){merged.ids=remote.ids||local.ids;merged.newIds=remote.newIds||local.newIds;merged.date=rd;merged.done=Object.keys(set);}
+  return merged;
+}
+// 单词进度：取「更进步」的那份（进度永不回退）
+function mergeWords(local,remote){
+  if(!Array.isArray(remote)||!remote.length)return local;
+  if(!Array.isArray(local)||!local.length)return remote;
+  var map={},order=[];
+  local.forEach(function(w){map[w.id]=w;order.push(w.id);});
+  remote.forEach(function(rw){
+    if(!rw||!rw.id)return;
+    var lw=map[rw.id];
+    if(!lw){map[rw.id]=rw;order.push(rw.id);return;}
+    var m=Object.assign({},lw);
+    m.level=Math.max(lw.level||0,rw.level||0);
+    m.recogStreak=Math.max(lw.recogStreak||0,rw.recogStreak||0);
+    if(rw.graduated||lw.graduated)m.graduated=true;
+    if(rw.gradNext&&(!lw.gradNext||rw.gradNext>lw.gradNext))m.gradNext=rw.gradNext;
+    map[rw.id]=m;
+  });
+  return order.map(function(k){return map[k];});
+}
 function pullSync(){
   if(!store.settings.syncEnabled||!store.settings.syncToken)return;
   var url=syncBase()+'/api/pull?token='+encodeURIComponent(store.settings.syncToken);
@@ -1948,7 +2034,15 @@ function pullSync(){
     var has=false;SYNC_KEYS.forEach(function(k){var v=j.data[k];if(v&&((v.length||0)>0||Object.keys(v).length>0))has=true;});
     if(!has)return;                               // 防空数据覆盖
     syncState.applying=true;
-    SYNC_KEYS.forEach(function(k){if(j.data[k]!==undefined){store[k]=j.data[k];save(k,store[k]);}});
+    SYNC_KEYS.forEach(function(k){
+      if(j.data[k]===undefined)return;
+      // 签到 / 牌组 / 单词进度：智能合并，不整体覆盖（两端各背各的也能累加）
+      if(k==='streak'){store.streak=mergeStreak(store.streak,j.data[k]);}
+      else if(k==='deck'){store.deck=mergeDeck(store.deck,j.data[k]);}
+      else if(k==='words'){store.words=mergeWords(store.words,j.data[k]);}
+      else{store[k]=j.data[k];}
+      save(k,store[k]);
+    });
     syncState.localRev=Number(j.ts);
     syncState.applying=false;
     if(store.settings.syncRev<syncState.localRev){store.settings.syncRev=syncState.localRev;save('settings',store.settings);}
