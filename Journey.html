@@ -1048,9 +1048,10 @@ function checkIn(){
   if(s.dates.indexOf(td)<0)s.dates.push(td);
   s.dates.sort();
   s.lastDate=td;
+  store.streak=s;                 // 必须先挂上再推导，否则首次打卡会算出「连续 0 天」
   s.count=calcStreakCount();      // 由日期集合推导，两端算法一致
   s.total=s.dates.length;
-  store.streak=s;save('streak',s);
+  save('streak',s);
 }
 /* ===== 签到日期集合：手机 + 电脑合并取并集，永不冲突 ===== */
 function streakDates(){
@@ -1958,29 +1959,58 @@ function speak(text){
 
 /* ===== Auto cross-device sync (server-backed) ===== */
 var SYNC_KEYS=['tasks','projects','words','fitness','reports','reminders','deck','streak','followIndex'];
-var syncState={enabled:false,token:'',localRev:0,applying:false,pushTimer:null,timer:null};
+var syncState={enabled:false,token:'',localTs:0,remoteTs:0,applying:false,pushTimer:null,timer:null,lastMsg:''};
 function syncBase(){return (store.settings.syncServer||'').replace(/\/+$/,'')||'';}
 function genToken(){var s='';var c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';for(var i=0;i<12;i++)s+=c[Math.floor(Math.random()*c.length)];return s;}
 function setSyncBadge(cls,txt){var b=document.getElementById('syncBadge');if(!b)return;b.className='sync-badge '+cls;b.textContent=txt;}
+/* 带超时 + HTTP 状态检查 + 非 JSON 识别，失败时给出可读原因（Render 冷启动/静态站 404 都能区分出来） */
+function syncFetch(url,opt,timeout,retry){
+  var ac=(typeof AbortController!=='undefined')?new AbortController():null;
+  var to=setTimeout(function(){if(ac)ac.abort();},timeout||12000);
+  var o=Object.assign({},opt||{});
+  if(ac)o.signal=ac.signal;
+  return fetch(url,o).then(function(r){
+    clearTimeout(to);
+    if(!r.ok){var he=new Error('HTTP '+r.status);he.noRetry=true;throw he;}
+    return r.text();
+  }).then(function(t){
+    try{return JSON.parse(t);}
+    catch(e){var je=new Error('返回不是JSON（网址可能不是同步服务器）');je.noRetry=true;throw je;}
+  }).catch(function(e){
+    // 仅对「超时/网络抖动」重试一次（Render 免费实例冷启动常见 30s+，HTTP 错误不重试）
+    if(retry&&!e.noRetry)return syncFetch(url,opt,20000,false);
+    throw e;
+  });
+}
 function schedulePush(){
   if(!store.settings.syncEnabled||!store.settings.syncToken)return;
-  syncState.localRev=Date.now();
+  syncState.localTs=Date.now();
   if(syncState.pushTimer)clearTimeout(syncState.pushTimer);
   syncState.pushTimer=setTimeout(pushSync,1500);
 }
 function pushSync(){
   if(!store.settings.syncEnabled||!store.settings.syncToken)return;
-  var data={};SYNC_KEYS.forEach(function(k){data[k]=store[k];});
-  var payload={token:store.settings.syncToken,ts:syncState.localRev,data:data};
   setSyncBadge('busy','同步中…');
-  fetch(syncBase()+'/api/push',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
-    .then(function(r){return r.json();})
-    .then(function(j){
-      if(j&&j.ok){store.settings.syncRev=syncState.localRev;save('settings',store.settings);setSyncBadge('ok','已同步');}
-      else if(j&&j.conflict){pullSync();}
-      else{setSyncBadge('err','同步失败');}
-    })
-    .catch(function(){setSyncBadge('err','未连接');});
+  // 关键：推送前先拉取合并。否则本地旧数据会整体覆盖云端的另一端进度（签到天数被吃掉的元凶）
+  pullSync(function(){
+    var data={};SYNC_KEYS.forEach(function(k){data[k]=store[k];});
+    var ts=Math.max(Date.now(),syncState.remoteTs+1);
+    var payload={token:store.settings.syncToken,ts:ts,data:data};
+    syncFetch(syncBase()+'/api/push',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)},15000,true)
+      .then(function(j){
+        if(j&&j.ok){
+          syncState.remoteTs=ts;syncState.localTs=ts;
+          store.settings.syncRev=ts;save('settings',store.settings);
+          syncState.lastMsg='已上传 ts='+ts;
+          setSyncBadge('ok','已同步');
+        }else if(j&&j.conflict){
+          syncState.remoteTs=Number(j.ts)||syncState.remoteTs;
+          syncState.lastMsg='版本冲突，已重新合并';
+          pullSync();   // 拉下最新，下一轮再推
+        }else{syncState.lastMsg='服务器拒绝：'+((j&&j.error)||'未知');setSyncBadge('err','同步失败');}
+      })
+      .catch(function(e){syncState.lastMsg=(e&&e.message)||'网络失败';setSyncBadge('err','未连接');});
+  });
 }
 /* ===== 智能合并：解决「手机 + 电脑各背各的，整体覆盖会丢进度」 ===== */
 // 签到日期：并集（两边打过的卡都算，去重不重复计数）
@@ -2025,14 +2055,18 @@ function mergeWords(local,remote){
   });
   return order.map(function(k){return map[k];});
 }
-function pullSync(){
-  if(!store.settings.syncEnabled||!store.settings.syncToken)return;
+function pullSync(cb){
+  if(!store.settings.syncEnabled||!store.settings.syncToken){cb&&cb('off');return;}
   var url=syncBase()+'/api/pull?token='+encodeURIComponent(store.settings.syncToken);
-  fetch(url).then(function(r){return r.json();}).then(function(j){
-    if(!j||!j.data)return;                       // 无数据：不覆盖本地
-    if(Number(j.ts)<=syncState.localRev)return;  // 本地更新：跳过
+  syncFetch(url,null,12000,true).then(function(j){
+    if(!j||j.error){syncState.lastMsg=(j&&j.error)||'无数据';cb&&cb('empty');return;}
+    if(!j.data){syncState.lastMsg='云端暂无数据';cb&&cb('empty');return;}
+    // 只跟「上次拉到的远端版本」比，不跟本地改动时间比
+    // （旧代码拿本地改动时间比较，导致本机一有改动就永远拉不到另一端的更新 ← 签到天数不涨的根因）
+    var rts=Number(j.ts)||0;
+    if(rts<=syncState.remoteTs){syncState.lastMsg='已是最新 ts='+rts;cb&&cb('same');return;}
     var has=false;SYNC_KEYS.forEach(function(k){var v=j.data[k];if(v&&((v.length||0)>0||Object.keys(v).length>0))has=true;});
-    if(!has)return;                               // 防空数据覆盖
+    if(!has){syncState.lastMsg='云端数据为空，已跳过';cb&&cb('empty');return;}
     syncState.applying=true;
     SYNC_KEYS.forEach(function(k){
       if(j.data[k]===undefined)return;
@@ -2043,21 +2077,26 @@ function pullSync(){
       else{store[k]=j.data[k];}
       save(k,store[k]);
     });
-    syncState.localRev=Number(j.ts);
     syncState.applying=false;
-    if(store.settings.syncRev<syncState.localRev){store.settings.syncRev=syncState.localRev;save('settings',store.settings);}
+    syncState.remoteTs=rts;
+    if((Number(store.settings.syncRev)||0)<rts){store.settings.syncRev=rts;save('settings',store.settings);}
+    syncState.lastMsg='已拉取 ts='+rts+' · 连续'+calcStreakCount()+'天';
     renderAll();
     setSyncBadge('ok','已同步');
-  }).catch(function(){setSyncBadge('err','未连接');});
+    cb&&cb('ok');
+  }).catch(function(e){
+    syncState.lastMsg=(e&&e.message)||'网络失败';
+    setSyncBadge('err','未连接');
+    cb&&cb('err');
+  });
 }
 function initSync(){
   syncState.enabled=!!store.settings.syncEnabled;
   if(!syncState.enabled){setSyncBadge('off','未开启');return;}
   if(!store.settings.syncToken){store.settings.syncToken=genToken();save('settings',store.settings);}
-  syncState.localRev=Number(store.settings.syncRev)||0;
+  syncState.remoteTs=Number(store.settings.syncRev)||0;
   setSyncBadge('busy','同步中…');
-  pullSync();
-  setTimeout(pushSync,600);
+  pullSync(function(){ pushSync(); });   // 先合并云端，再把合并结果回写，保证云端是完整的
   if(syncState.timer)clearInterval(syncState.timer);
   syncState.timer=setInterval(function(){ if(store.settings.syncEnabled)pullSync(); },15000);
 }
@@ -2075,7 +2114,10 @@ function showSyncSettings(){
    +'<button class="btn btn-ghost" data-action="gen-token">生成</button><button class="btn btn-ghost" data-action="copy-token">复制</button></div>'
    +'<div style="font-size:12px;color:var(--muter);margin-top:6px">把房间号用微信发到另一台设备，在它上面填同样的号即可共享数据。</div></div>'
    +'<div class="field" style="margin-top:6px"><label>同步服务器地址（一般留空＝用当前网址）</label>'
-   +'<input id="syncServerIn" value="'+esc(s.syncServer||'')+'" placeholder="留空即用当前网站"></div>'
+   +'<input id="syncServerIn" value="'+esc(s.syncServer||'')+'" placeholder="留空即用当前网站">'
+   +'<div style="font-size:12px;margin-top:6px;padding:8px 10px;border-radius:8px;background:#F1F5F9;line-height:1.6">'
+   +'实际请求地址：<b style="word-break:break-all">'+esc(syncBase()||location.origin)+'</b><br>'
+   +'<span style="color:var(--muter)">若这里显示 <b>file://</b> 或 <b>github.io</b>，说明连不上同步服务器——必须填你的 Render 网址（如 https://journey-sync-xxxx.onrender.com）</span></div></div>'
    +'<div class="rem-row" style="margin-top:12px"><div class="rl"><b id="syncStatusTxt">状态：'+(enabled?'已开启':'未开启')+'</b></div>'
    +'<button class="btn btn-ghost" data-action="save-sync">保存设置</button><button class="btn btn-ghost" data-action="test-sync">立即同步</button></div>'
    +'<div style="font-size:12px;color:var(--muter);margin-top:10px">说明：同步采用「最后修改时间优先」；清空数据不会跨设备删除（防误删）。两端都需联网才会同步；建议保持网页打开。</div>';
@@ -2195,7 +2237,28 @@ document.addEventListener('click',function(e){
   else if(a==='gen-token'){var _g=document.getElementById('syncTokenIn');if(_g)_g.value=genToken();}
   else if(a==='copy-token'){var _c=document.getElementById('syncTokenIn');if(_c&&_c.value){if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(_c.value);showToast('房间号已复制');}}
   else if(a==='save-sync'){var _t=document.getElementById('syncTokenIn'),_s=document.getElementById('syncServerIn');if(!_t)return;var tok=(_t.value||'').trim(),srv=(_s?(_s.value||'').trim():'');if(!/^[A-Za-z0-9_-]{1,40}$/.test(tok)){showToast('房间号只能是字母数字 _ -，1~40位','err');return;}store.settings.syncToken=tok;store.settings.syncServer=srv;save('settings',store.settings);closeModal();initSync();showToast('同步设置已保存');}
-  else if(a==='test-sync'){pullSync();setTimeout(pushSync,500);showToast('已触发同步');}
+  else if(a==='test-sync'){
+    if(!store.settings.syncEnabled){showToast('先打开「开启自动同步」','err');return;}
+    setSyncBadge('busy','同步中…');
+    var _st2=document.getElementById('syncStatusTxt');
+    if(_st2)_st2.textContent='状态：正在拉取…';
+    pullSync(function(r){
+      if(r==='err'){
+        if(_st2)_st2.innerHTML='状态：<b style="color:#C2410C">连接失败</b> — '+esc(syncState.lastMsg);
+        showToast('连接失败：'+syncState.lastMsg,'err');
+        return;
+      }
+      if(_st2)_st2.textContent='状态：拉取完成（'+r+'），正在上传…';
+      pushSync();
+      setTimeout(function(){
+        var b=document.getElementById('syncBadge');
+        var st=b?b.textContent:'未知';
+        if(_st2)_st2.innerHTML='状态：<b>'+esc(st)+'</b> — '+esc(syncState.lastMsg)
+          +'<br>房间号 '+esc(store.settings.syncToken||'')+' · 连续 '+calcStreakCount()+' 天 / 累积 '+streakDates().length+' 天';
+        showToast('同步'+st+'：'+syncState.lastMsg);
+      },3000);
+    });
+  }
   else if(a==='clear')clearAll();
   else if(a==='batch-mode')setBatchMode(!batchMode);
   else if(a==='batch-all')batchSelectAll();
