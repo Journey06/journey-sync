@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<html lang="zh-CN" data-page-node-id="3MwSjZdNec3mkBcBDSPT76">
+<head data-page-node-id="D3LOEJ9BgjZF3ksvXMXdj9">
+<meta charset="UTF-8" data-page-node-id="uNSDwQB8ZJZsu96poYAnDh">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="IR316k1l9EDqnj9rHpCbcZ">
 <title>Journey · 毅龙俄语外贸工作台</title>
 <style>
 :root{
@@ -133,6 +133,7 @@ header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;ba
 .tday-tag.life{background:#F2E8FA;color:#6D45B8}
 .tday-tag.over{background:var(--redSoft);color:var(--red)}
 .tday-tag.follow{background:#FFE6D6;color:#B25808}
+.tday-tag.prio{background:#FDE68A;color:#92400E}
 .tday-ops{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-left:auto}
 .tday-ops .mini2{padding:5px 10px;font-size:11.5px;min-height:32px;border-radius:8px}
 .tday-ops .mini2.ok{background:var(--greenSoft);border-color:#cfe6d2;color:var(--green)}
@@ -166,6 +167,8 @@ header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;ba
 
 /* ===== Task list ===== */
 .task-row{display:flex;align-items:flex-start;gap:11px;padding:13px 6px;border-bottom:1px dashed #EFE9DA}
+.task-row.prio{border-left:3px solid var(--gold);background:#FFFBEF;border-radius:0 8px 8px 0;padding-left:9px}
+.task-row.prio .task-main>b::before{content:'优先 · ';color:#B45309;font-size:12px}
 .task-row:last-child{border-bottom:none}
 .task-check{width:26px;height:26px;border-radius:50%;border:2px solid #D9D0BC;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:2px;transition:.15s;cursor:pointer}
 .task-check svg{width:14px;height:14px;stroke:#fff;opacity:0}
@@ -183,6 +186,7 @@ header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;ba
 .task-ops .mini svg{width:12px;height:12px}
 .task-ops .mini.del{color:var(--red);border-color:#F2C8C8}
 .task-ops .mini.del:hover{background:var(--redSoft)}
+.task-ops .mini.prio-on{background:#FDE68A;border-color:#D9A93C;color:#92400E}
 
 .tag{font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:20px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
 .tag svg{width:11px;height:11px}
@@ -354,225 +358,225 @@ footer{position:relative;z-index:2;max-width:1320px;margin:6px auto 0;padding:0 
 .sync-badge.err{color:#b23030;background:#fbe3e3}
 </style>
 </head>
-<body>
-<header>
- <div class="hd-cover" id="hdCover"></div>
- <div class="hd-in">
-  <div class="brand">
-   <div class="brand-mark">J</div>
-   <div>
-    <h1>Journey · 毅龙俄语外贸工作台</h1>
-    <p>客户开发 · 报价 · 收款 · 售后 · 复盘 · 生活打卡</p>
+<body data-page-node-id="oyCkyWCCjf0MDcu0lPD6Wd">
+<header data-page-node-id="Fg5NWwFkfrw2kvU8WGu3qk">
+ <div class="hd-cover" id="hdCover" data-page-node-id="Yh6XG9Orj1ApI379DiLQXA"></div>
+ <div class="hd-in" data-page-node-id="kIp4GV9Jvmuotha7gUVInJ">
+  <div class="brand" data-page-node-id="eS4vlnhA8a8z8gfcM1O5R5">
+   <div class="brand-mark" data-page-node-id="UrNUFzkLouxExkZBiFfGTQ">J</div>
+   <div data-page-node-id="BmQQEodsaOukJdW3u88HTz">
+    <h1 data-page-node-id="YY0D7F7EL1EaRansZwon0x">Journey · 毅龙俄语外贸工作台</h1>
+    <p data-page-node-id="iLDPyGd1WnzcGZ4l1yryf1">客户开发 · 报价 · 收款 · 售后 · 复盘 · 生活打卡</p>
    </div>
   </div>
-  <div class="hd-btns">
-    <button class="hd-btn" data-action="edit-cover" title="设置封面图">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-      <span>封面</span>
+  <div class="hd-btns" data-page-node-id="AQREPrjihRQbnhhVDvm5LL">
+    <button class="hd-btn" data-action="edit-cover" title="设置封面图" data-page-node-id="mhx4xnygWGBmFWDC7HFRjK">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="fc21l5NVuUH9QZSCmCIqTu"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" data-page-node-id="cunqBkrIoUqMzkTRpwNaHx"/><circle cx="12" cy="13" r="4" data-page-node-id="K5B20MdmpBTSdCTolJzhCN"/></svg>
+      <span data-page-node-id="XGoJMskvcwEILPJJver2lT">封面</span>
     </button>
-    <button class="hd-btn danger" data-action="remove-cover" id="btnRemoveCover" title="移除封面" style="display:none">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M6 6l1 14a2 2 0 002 2h6a2 2 0 002-2l1-14"/></svg>
-      <span>去封面</span>
+    <button class="hd-btn danger" data-action="remove-cover" id="btnRemoveCover" title="移除封面" style="display:none" data-page-node-id="E0s99nVKPMz6TY1ZKMDyeq">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="Apj7sUwxYoKY6w2gIGVD3n"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M6 6l1 14a2 2 0 002 2h6a2 2 0 002-2l1-14" data-page-node-id="bOBu8G1G3U2Qcvv0KCKnPU"/></svg>
+      <span data-page-node-id="fbPXsXqbUbSQFgPX7YL8GU">去封面</span>
     </button>
-    <button class="hd-btn" data-action="export" title="导出 JSON 备份">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-      <span>导出</span>
+    <button class="hd-btn" data-action="export" title="导出 JSON 备份" data-page-node-id="MhwGDJqqKejDb4pyQPCTUB">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="Lo4jXzkR3G1CPU2x3ZJ6up"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" data-page-node-id="R1aOTzsXUsIsi4sxMDQBPD"/><path d="M7 10l5 5 5-5" data-page-node-id="gtCDIktvVV4RytCOXxvQhD"/><path d="M12 15V3" data-page-node-id="6Pdr9CHOosp56ok0GZO1uD"/></svg>
+      <span data-page-node-id="BGKU3d09AbfD35xU9a7hoB">导出</span>
     </button>
-    <button class="hd-btn" data-action="import" title="导入恢复">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
-      <span>导入</span>
+    <button class="hd-btn" data-action="import" title="导入恢复" data-page-node-id="0Dxpo11Ed4F7puAtbwoG0T">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="O15MmpUBUdCgypI6IphJjj"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" data-page-node-id="kWEBNfqTYzEnRjqvayXKM3"/><path d="M17 8l-5-5-5 5" data-page-node-id="1Cu05RfyaKnxnJxTuHbunx"/><path d="M12 3v12" data-page-node-id="OuuKQcNyDH8XvGNH9fXN6U"/></svg>
+      <span data-page-node-id="UzhkSDAEIZ2O8G8m8Jr7dY">导入</span>
     </button>
-    <button class="hd-btn" data-action="sync" title="跨设备同步（手机↔电脑）">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
-      <span>同步</span>
+    <button class="hd-btn" data-action="sync" title="跨设备同步（手机↔电脑）" data-page-node-id="HUbNMgZNN2Q1R5Hqa9xxut">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="7eriA8K0htjUJSpTCB1tyP"><path d="M17 1l4 4-4 4" data-page-node-id="QK1AkiNmGAWrAv9xbpWpIq"/><path d="M3 11V9a4 4 0 014-4h14" data-page-node-id="47xaOcHnXoEyWVXFQMpM3j"/><path d="M7 23l-4-4 4-4" data-page-node-id="XwSLo7eyCMC6sn2bGL4BEq"/><path d="M21 13v2a4 4 0 01-4 4H3" data-page-node-id="GI6xN1EezFPBG5k8bUYSHI"/></svg>
+      <span data-page-node-id="Z6h3X3CYGmSOOdNfc9fWrz">同步</span>
     </button>
-    <span id="syncBadge" class="sync-badge off" title="同步状态">未开启</span>
-    <button class="hd-btn danger" data-action="clear" title="清空全部数据">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M6 6l1 14a2 2 0 002 2h6a2 2 0 002-2l1-14"/></svg>
-      <span>清空</span>
+    <span id="syncBadge" class="sync-badge off" title="同步状态" data-page-node-id="T44i9qEVwf59C0HMV83SeC">未开启</span>
+    <button class="hd-btn danger" data-action="clear" title="清空全部数据" data-page-node-id="8DUx9h3xZVN6X3jTXFIxlf">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="OXPdn4hKFkozOUuGAEj7G7"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M6 6l1 14a2 2 0 002 2h6a2 2 0 002-2l1-14" data-page-node-id="RCYk6pmvdzNBlMeX7M9Umc"/></svg>
+      <span data-page-node-id="IlqH1B2EoNN7mDm9fF4bY0">清空</span>
     </button>
   </div>
  </div>
 </header>
 
-<main>
- <div class="shell">
-  <aside class="sidebar">
-    <div class="side-grp">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+<main data-page-node-id="VoVL9seomkJPRljXeO6eDV">
+ <div class="shell" data-page-node-id="igBOdY3jtj0FhWI7sdUStH">
+  <aside class="sidebar" data-page-node-id="oCtBMdikS8cTCYHnrZA4Vg">
+    <div class="side-grp" data-page-node-id="aKYt31TZlyheTFUwvqZpsP">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="wCDOTWaBXrK1BHt2PDT45T"><path d="M4 19.5A2.5 2.5 0 016.5 17H20" data-page-node-id="qXJZ5NqG1HFrGNBMD37c64"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" data-page-node-id="tiOBtZR78PUBYCFpuf9xkI"/></svg>
       每日学习
     </div>
-    <button class="side-item" data-tab="words"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg><span>背单词</span><span class="cnt" data-cnt="words"></span></button>
-    <div class="side-grp">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-4V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v3H4a1 1 0 00-1 1v11a2 2 0 002 2h14a2 2 0 002-2V8a1 1 0 00-1-1z"/></svg>
+    <button class="side-item" data-tab="words" data-page-node-id="ilQ4jBfGEFh8azePDGClBr"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="BmzfDCtnCiLvaf6plv45dL"><path d="M4 19.5A2.5 2.5 0 016.5 17H20" data-page-node-id="THaUKPC0tCrllhgK7JaKE1"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" data-page-node-id="3B54oZfSvB7AYkUEc50pVb"/></svg><span data-page-node-id="assJPPA1Z2bDrC2jYSRWQV">背单词</span><span class="cnt" data-cnt="words" data-page-node-id="WNC2Dwijzw51E6iEzoWeZH"></span></button>
+    <div class="side-grp" data-page-node-id="eNHCHtnnKx8naWBMUor68K">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="WsCglWFYrfuv7NXcoJDCSb"><path d="M20 7h-4V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v3H4a1 1 0 00-1 1v11a2 2 0 002 2h14a2 2 0 002-2V8a1 1 0 00-1-1z" data-page-node-id="Ol573Z4xLDHUMleYHkl1a6"/></svg>
       职场板块
     </div>
-    <button class="side-item" data-tab="deals"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>业务跟进</span><span class="cnt" data-cnt="deals"></span></button>
-    <button class="side-item" data-tab="projects"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg><span>项目阶段</span><span class="cnt" data-cnt="projects"></span></button>
-    <button class="side-item" data-tab="finance"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg><span>收款报关退税</span><span class="cnt" data-cnt="finance"></span></button>
-    <button class="side-item" data-tab="aftersale"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg><span>订单售后</span><span class="cnt" data-cnt="aftersale"></span></button>
-    <button class="side-item" data-tab="review"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg><span>每日复盘日报</span><span class="cnt" data-cnt="review"></span></button>
-    <div class="side-grp" style="margin-top:8px">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+    <button class="side-item" data-tab="deals" data-page-node-id="NNKqhGWOtX0HyHftIis7B8"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="F48NphDVZMzLBPQ3DLgCHd"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" data-page-node-id="ww54Y9N6TgSfIYk2DR698i"/><circle cx="9" cy="7" r="4" data-page-node-id="UYEyWyNmRu2vIgG4RBoGDS"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" data-page-node-id="tLeA2Cv0OvYPiHwxEH6mUT"/></svg><span data-page-node-id="JsH027CHet5DaAQ566D9hj">业务跟进</span><span class="cnt" data-cnt="deals" data-page-node-id="XdIb55O1moSLIfipiMCqyH"></span></button>
+    <button class="side-item" data-tab="projects" data-page-node-id="ruWqfkeDIAetnut3WTMIMZ"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="pgGFtOUajqUcAHVCzt52t3"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" data-page-node-id="H3QAiPEgPlWJiyEtAvPuUx"/></svg><span data-page-node-id="rWA16IIVBZNjRbeAuO0ggM">项目阶段</span><span class="cnt" data-cnt="projects" data-page-node-id="IzfsyaNgEPEfuCAYhRnW3g"></span></button>
+    <button class="side-item" data-tab="finance" data-page-node-id="r7JP35LmfngzGNzTnlMqrF"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="D7xlcTiWjpOZhl4AmDCwCg"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6" data-page-node-id="pY7Kb3CX7j5MQpXU8p11Id"/></svg><span data-page-node-id="i7sRX4l2FH1DxvDn6PkBkl">收款报关退税</span><span class="cnt" data-cnt="finance" data-page-node-id="Ez6uEUpWXoIhUNyLqOTbhV"></span></button>
+    <button class="side-item" data-tab="aftersale" data-page-node-id="34t7XRt3PXut2DtFpN7WIV"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="ouCAYz8DPIS7s7CVMJFDGU"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" data-page-node-id="S76uVPeBXQr9hQpbfVoM6W"/></svg><span data-page-node-id="DWCvcSm69ZdymL983ceCmc">订单售后</span><span class="cnt" data-cnt="aftersale" data-page-node-id="vUmd0uZAqyk7FEr3zbIJnP"></span></button>
+    <button class="side-item" data-tab="review" data-page-node-id="VetWDObZ6n4qRJeQ0dPEPl"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="5kCRPVPpDcMhmNX2ArPmdV"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" data-page-node-id="y0PshXdTdIgk438WdTEjzd"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" data-page-node-id="1qwMBdI6VtJDzNBl3whT8b"/></svg><span data-page-node-id="5zIcwqrFfYXF7FSNxrxemd">每日复盘日报</span><span class="cnt" data-cnt="review" data-page-node-id="duJ9epMz0lEFPPso0HgZ6W"></span></button>
+    <div class="side-grp" style="margin-top:8px" data-page-node-id="uBHJTcRXVp0bJGa3KoF1fF">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="N2EjWwMFFGQN4kOnD7Ofoj"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" data-page-node-id="CTAe0LNzUWiUIMZ5lLrrne"/></svg>
       日常生活
     </div>
-    <button class="side-item" data-tab="life"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><span>个人生活</span><span class="cnt" data-cnt="life"></span></button>
-    <button class="side-item" data-tab="remind"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg><span>提醒铃声</span><span class="cnt" data-cnt="remind"></span></button>
-    <div class="side-foot">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 014 10 15 15 0 01-4 10 15 15 0 01-4-10 15 15 0 014-10z"/></svg>
+    <button class="side-item" data-tab="life" data-page-node-id="HWyCF8fdOGe92r6YSp9Kd4"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="6Ilga354OYMjiNeOOdoHqE"><circle cx="12" cy="12" r="10" data-page-node-id="NO0rKMbO5zpuqui9hg9nyC"/><path d="M12 6v6l4 2" data-page-node-id="H5O2QCaphPo7aA7ISCmr6T"/></svg><span data-page-node-id="1WoPWmFs6gcpab8OUJLXEu">个人生活</span><span class="cnt" data-cnt="life" data-page-node-id="ct0aSX247pqQAae1IsWSG6"></span></button>
+    <button class="side-item" data-tab="remind" data-page-node-id="bvq0ufb6zjV1G8ksAU90Dq"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="sKzJIhJ2e3LXtJzM1FkcGD"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0" data-page-node-id="ImIQvSAyYYIdUNjmu3SSqF"/></svg><span data-page-node-id="nhoV1rZS884ntjNsPrOMVB">提醒铃声</span><span class="cnt" data-cnt="remind" data-page-node-id="Q4Z8OVq52dFFIx3LFSPddL"></span></button>
+    <div class="side-foot" data-page-node-id="wBLSEpVwcD6UjbCGd87vpB">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="ODLQT1ZfaTgW5Y0aAndlY2"><circle cx="12" cy="12" r="10" data-page-node-id="JDQkGwjoLay5L1PmXDgwCU"/><path d="M2 12h20M12 2a15 15 0 014 10 15 15 0 01-4 10 15 15 0 01-4-10 15 15 0 014-10z" data-page-node-id="Dom6OW0HOeyMBg8MOI5BUk"/></svg>
       毅龙 · 俄语区 · 数据仅本地
     </div>
   </aside>
 
-  <div class="content">
+  <div class="content" data-page-node-id="SC6QvVRmr40CBdGuMvyzNX">
 
    <!-- 22:10 熬夜提醒条 -->
-   <section class="nightbar" id="nightBar">
-    <div class="moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg></div>
-    <div class="nb-info">
-      <b id="nbTitle">今晚 22:10 提醒入眠</b>
-      <span id="nbSub">到点会自动提醒，别让手机陪着熬夜</span>
+   <section class="nightbar" id="nightBar" data-page-node-id="I3RjpmSfEB1NbknIDD6kRv">
+    <div class="moon" data-page-node-id="9B2HfP6Xtd8GIOYX1ZYDVw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="eSMlgKaVqVzlj7F451Po8S"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z" data-page-node-id="REJc946wdqwlKdZ5Rdgujv"/></svg></div>
+    <div class="nb-info" data-page-node-id="rZOjxH0Zc1unxxm1VY7APR">
+      <b id="nbTitle" data-page-node-id="29fjIIftsq24xyLbXQI4Kl">今晚 22:10 提醒入眠</b>
+      <span id="nbSub" data-page-node-id="ZaVk14zohrRYeGzFD5Jm4R">到点会自动提醒，别让手机陪着熬夜</span>
     </div>
-    <div class="nb-time" id="nbTime">--:--<small id="nbUnit"></small></div>
-    <button class="nb-toggle on" id="nbToggle" title="开关熬夜提醒">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="5" width="22" height="14" rx="7"/><circle cx="16" cy="12" r="3"/></svg>
+    <div class="nb-time" id="nbTime" data-page-node-id="bYfgwdeu1MsD71nxy8ALuI">--:--<small id="nbUnit" data-page-node-id="IQXGzXshZRMUMTZC3rPDGI"></small></div>
+    <button class="nb-toggle on" id="nbToggle" title="开关熬夜提醒" data-page-node-id="3pW2eiuq7K9HLOHcXER7AD">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="lt7HNvVDHYQs0tES9VhPhc"><rect x="1" y="5" width="22" height="14" rx="7" data-page-node-id="vDP1wcB1WtdAGuDX1d0gvc"/><circle cx="16" cy="12" r="3" data-page-node-id="ojHeFKddiRzTVdMSA3iI7m"/></svg>
     </button>
    </section>
 
    <!-- 备份提示 -->
-   <div class="backup-tip hide" id="backupTip">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-    <span id="backupTipText">数据已积累较多，建议导出备份</span>
+   <div class="backup-tip hide" id="backupTip" data-page-node-id="nJlIsL15AIMtAKE87X7VCt">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="wF5JnJyEx1Xm6c5WKD4gwS"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" data-page-node-id="IfaLItvVekbkhZDmMLaFx0"/><path d="M7 10l5 5 5-5" data-page-node-id="ZdppSk7GkHgBXdjGqk3013"/><path d="M12 15V3" data-page-node-id="qWPbKZK8kY5ahgQ41ahefJ"/></svg>
+    <span id="backupTipText" data-page-node-id="OrltqezGoyA0SMG7Zxbn2F">数据已积累较多，建议导出备份</span>
    </div>
 
    <!-- 今天要处理 -->
-   <section class="today">
-    <div class="today-h">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-      <b>今天要处理</b>
-      <span id="todayCount"></span>
+   <section class="today" data-page-node-id="8hFMC9b0Adf19tAbNgfJJU">
+    <div class="today-h" data-page-node-id="sPTvqzTlz4PHsv9A4zHALO">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="MINXBaaC4PIMl7LAaHT8TI"><circle cx="12" cy="12" r="9" data-page-node-id="P9OzzoimJdLHv9o4S1m1F3"/><path d="M12 7v5l3 3" data-page-node-id="kw4NpQX67l3MViGy1qRFU5"/></svg>
+      <b data-page-node-id="mN3If457rGMJGCiCgslHmE">今天要处理</b>
+      <span id="todayCount" data-page-node-id="0yZho8f2j5ETx2k20DM0Gt"></span>
     </div>
-    <div class="today-body" id="todayBody"></div>
+    <div class="today-body" id="todayBody" data-page-node-id="hxGZM46Q94iFV7gpPmf5wv"></div>
    </section>
 
    <!-- 背单词（置顶） -->
-   <section class="panel active" id="panel-words">
-    <div class="stat-grid" id="wordStats"></div>
+   <section class="panel active" id="panel-words" data-page-node-id="5TxZMRTHIRPBuPBafrfNZo">
+    <div class="stat-grid" id="wordStats" data-page-node-id="UrhpQR3CB1rCVXufGIcvsR"></div>
 
-    <div class="card">
-     <div class="card-h">
-       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
-       <div class="ttl"><b>俄语单词打卡</b><small>广告类·工厂·外贸业务员日常 · 遗忘曲线 · 每天3新+7复习</small></div>
-       <div class="act">
-        <button class="btn btn-ghost" data-action="add-word"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>添加单词</button>
-        <button class="btn btn-primary" data-action="pick-words"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-6.2-8.55"/><path d="M21 3v6h-6"/></svg>今日推荐</button>
+    <div class="card" data-page-node-id="ALbb23h2r1oAqbP37txdou">
+     <div class="card-h" data-page-node-id="Ubx4zmqYWDEEdSSWHVKqWr">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="Y6qpkuaWYJOm2e0NBfcbqJ"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" data-page-node-id="NZPpnFmLyjxtPpFfKyb5rW"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" data-page-node-id="wGKHObPzl3IlA5mu5Cd6xm"/></svg>
+       <div class="ttl" data-page-node-id="MFDlA1fYHxEBl98h0DVQYi"><b data-page-node-id="b7ZzugDlGbftkdB1kg5kwi">俄语单词打卡</b><small data-page-node-id="6yZ1CjW1tJHoblZAc7axhC">广告类·工厂·外贸业务员日常 · 遗忘曲线 · 每天3新+7复习</small></div>
+       <div class="act" data-page-node-id="MSk4Hm8w39bWb65ACHuDXx">
+        <button class="btn btn-ghost" data-action="add-word" data-page-node-id="Auy7EXMDGJVx5cDl6utGqB"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="m3IyfbazaaVLFtnCKfQqra"><path d="M12 5v14M5 12h14" data-page-node-id="eH2XikY7X8hidZelDMJLLW"/></svg>添加单词</button>
+        <button class="btn btn-primary" data-action="pick-words" data-page-node-id="der2smBGKCSQQIFW01NKA0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="8NjobDo9C5PJT9tea5HBSc"><path d="M21 12a9 9 0 11-6.2-8.55" data-page-node-id="7AcRF01rZrCkkyZqo0gjBy"/><path d="M21 3v6h-6" data-page-node-id="1tSTgZDTopuNQyqqHq3PTt"/></svg>今日推荐</button>
        </div>
      </div>
-     <div class="card-body" id="wordsBody"></div>
+     <div class="card-body" id="wordsBody" data-page-node-id="XIVbcCaBjfZAtP2EhFohFK"></div>
     </div>
    </section>
 
    <!-- 业务跟进 -->
-   <section class="panel" id="panel-deals">
-    <div class="card">
-     <div class="card-h">
-       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-       <div class="ttl"><b>业务跟进</b><small>客户开发 · 询价方案 · 看厂 · 英文报价 · 小满10天跟进 · 出货验货</small></div>
-       <div class="act">
-        <select id="dealsFilter" style="font-size:12.5px;padding:7px 9px;min-height:36px;width:auto">
-          <option value="all">全部</option>
-          <option value="open">未完成</option>
-          <option value="over">逾期</option>
-          <option value="done">已完成</option>
+   <section class="panel" id="panel-deals" data-page-node-id="EtmlWwSyN0jCu3QoQhPKqV">
+    <div class="card" data-page-node-id="ByIodThQGz5ETO6GSV6Dc6">
+     <div class="card-h" data-page-node-id="qSXqE0K1weONoIZyJQGfjv">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="hhr8bbUyPwsyCg3lFuiCdR"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" data-page-node-id="bqVu0QXMOBAeXDx7TfbAjG"/><circle cx="9" cy="7" r="4" data-page-node-id="ekdhl1wStiETUuWGuM8BGo"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" data-page-node-id="ocdTfx0E6ksqAC6qQzuXPP"/></svg>
+       <div class="ttl" data-page-node-id="19NaoGAbgxDAxDb3v6VQs6"><b data-page-node-id="CloboAmEDUgKdotbG0sMKx">业务跟进</b><small data-page-node-id="mRqiJXN3bSp3mjlz1WVsil">客户开发 · 询价方案 · 看厂 · 英文报价 · 小满10天跟进 · 出货验货</small></div>
+       <div class="act" data-page-node-id="1epVLbBVtPSnlKfk72LdaV">
+        <select id="dealsFilter" style="font-size:12.5px;padding:7px 9px;min-height:36px;width:auto" data-page-node-id="Ue87TBKmCyjcVIj9XR06KZ">
+          <option value="all" data-page-node-id="gkrGrsM86M1On7b9rZUrXe">全部</option>
+          <option value="open" data-page-node-id="H2FdKcOuNnTMN6Q8rSBaZW">未完成</option>
+          <option value="over" data-page-node-id="9EnMzywnJooGncZJ8BwUae">逾期</option>
+          <option value="done" data-page-node-id="WxyTFSv2WMUDpk2cDl8Gol">已完成</option>
         </select>
-        <button class="btn btn-ghost" data-action="batch-mode">批量删除</button>
-        <button class="btn btn-primary" data-action="add-task" data-module="deals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>新增</button>
+        <button class="btn btn-ghost" data-action="batch-mode" data-page-node-id="E6zknLESRtHAf9eakT8P11">批量删除</button>
+        <button class="btn btn-primary" data-action="add-task" data-module="deals" data-page-node-id="P4MQNoTsdyFfQM6Zm3kyIP"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="PKMixrbX31Ug5i55yYMMi8"><path d="M12 5v14M5 12h14" data-page-node-id="frUXmDeNqWqGFGOXRQek3S"/></svg>新增</button>
        </div>
      </div>
-     <div class="card-body" id="dealsBody"></div>
+     <div class="card-body" id="dealsBody" data-page-node-id="4gJNRpDClL6nJtTyumPKsW"></div>
     </div>
    </section>
 
    <!-- 项目阶段 -->
-   <section class="panel" id="panel-projects">
-    <div class="card">
-     <div class="card-h">
-       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg>
-       <div class="ttl"><b>项目阶段</b><small>效果图视频 · 项目方案</small></div>
-       <div class="act">
-        <button class="btn btn-ghost" data-action="batch-mode">批量删除</button>
-        <button class="btn btn-primary" data-action="add-project"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>新增项目</button>
+   <section class="panel" id="panel-projects" data-page-node-id="NB2c2Cy8LTfVpM8PCzbxcM">
+    <div class="card" data-page-node-id="vnH8J9k9GfjLeMYPg9lFuG">
+     <div class="card-h" data-page-node-id="shDyVPUwCuohwVCrCHyvhv">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="WXOtLUHKra8NRzBQM2u8nN"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" data-page-node-id="ogyAf62iFR6JBd2MhtQqN7"/></svg>
+       <div class="ttl" data-page-node-id="yUIoOvxfLUlSPQkuJPQeHt"><b data-page-node-id="qsSMwZhUx8xKAy5FjiuIyQ">项目阶段</b><small data-page-node-id="4VfxWRvH6xLOIiE86P3aUF">效果图视频 · 项目方案</small></div>
+       <div class="act" data-page-node-id="grKcOxeOFCRPR7b9HEtrtK">
+        <button class="btn btn-ghost" data-action="batch-mode" data-page-node-id="0UCvFHaNzcOZOZRrD17yMM">批量删除</button>
+        <button class="btn btn-primary" data-action="add-project" data-page-node-id="ofA3qyApOC2IgNZZrtSLoe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="85U8v4sRdpP5GbIAGt6jvA"><path d="M12 5v14M5 12h14" data-page-node-id="zQbJSsigRiKeAqUY8GJBBf"/></svg>新增项目</button>
        </div>
      </div>
-     <div class="card-body" id="projectsBody"></div>
+     <div class="card-body" id="projectsBody" data-page-node-id="Xvv1YHut17nZjB3yZSdxTZ"></div>
     </div>
    </section>
 
    <!-- 收款&报关退税 -->
-   <section class="panel" id="panel-finance">
-    <div class="card">
-     <div class="card-h">
-       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg>
-       <div class="ttl"><b>业务收款报关退税</b><small>下单收款 · 报关资料制作提交</small></div>
-       <div class="act">
-        <button class="btn btn-ghost" data-action="batch-mode">批量删除</button>
-        <button class="btn btn-primary" data-action="add-task" data-module="finance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>新增</button>
+   <section class="panel" id="panel-finance" data-page-node-id="mGEXH6XaivGIILpU06ihs4">
+    <div class="card" data-page-node-id="e8gUVUvesHGP4BJGclGRoH">
+     <div class="card-h" data-page-node-id="N3C8QT6SjY7GF62SBIsVTA">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="AG4dIzKjPOoke2jgyE8dcB"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6" data-page-node-id="7eFpsuQrGXVPovGwReZ2ym"/></svg>
+       <div class="ttl" data-page-node-id="67Ufg43WvYcmt34JnhZ2uV"><b data-page-node-id="wm2VMuaByobD1cJzWCBJKj">业务收款报关退税</b><small data-page-node-id="gP9aZQnWRhQWLY4yEGUZ4V">下单收款 · 报关资料制作提交</small></div>
+       <div class="act" data-page-node-id="TlbZiQz3DVJ7Kk92cugboY">
+        <button class="btn btn-ghost" data-action="batch-mode" data-page-node-id="bprVo2q1DbOStVWas7zboS">批量删除</button>
+        <button class="btn btn-primary" data-action="add-task" data-module="finance" data-page-node-id="Nx0Nwv0goRuw2Q9PPuyrIk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="cZZivDm1C7N8C4rk3DuE7q"><path d="M12 5v14M5 12h14" data-page-node-id="qrEyvBTt2PzB59C1A2lVJo"/></svg>新增</button>
        </div>
      </div>
-     <div class="card-body" id="financeBody"></div>
+     <div class="card-body" id="financeBody" data-page-node-id="In7Kdxv7mDBX8Hg0eyRHYL"></div>
     </div>
    </section>
 
    <!-- 订单售后 -->
-   <section class="panel" id="panel-aftersale">
-    <div class="card">
-     <div class="card-h">
-       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
-       <div class="ttl"><b>订单售后</b><small>售后翻译 · 售后处理 · LED屏幕亮度年度提醒</small></div>
-       <div class="act">
-        <button class="btn btn-ghost" data-action="batch-mode">批量删除</button>
-        <button class="btn btn-primary" data-action="add-task" data-module="aftersale"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>新增</button>
+   <section class="panel" id="panel-aftersale" data-page-node-id="oAUtuH9BPXOMvvQ20Asg2U">
+    <div class="card" data-page-node-id="aQlFFTIitfgNPBgPvypO2Z">
+     <div class="card-h" data-page-node-id="8LGwR9EAPy5Mh3FRz6qOde">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="jlEChrUDc558ORJLVgbgkB"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" data-page-node-id="S9jlOscu68rfgeqv40qMGA"/></svg>
+       <div class="ttl" data-page-node-id="J0GBUJwfCggr67uAq3RN2t"><b data-page-node-id="c65rfzC6FxoLG5NuNudLbR">订单售后</b><small data-page-node-id="kdBYJIhck4fnnVbiHNKlO7">售后翻译 · 售后处理 · LED屏幕亮度年度提醒</small></div>
+       <div class="act" data-page-node-id="LpNg9rYGJDLgzDImwxVoDu">
+        <button class="btn btn-ghost" data-action="batch-mode" data-page-node-id="u5Oy4r4lnnAy1STBOKXo7J">批量删除</button>
+        <button class="btn btn-primary" data-action="add-task" data-module="aftersale" data-page-node-id="41Ae6fdFUpVpfurcLRAQHS"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="2JMibsediZo7eOUGUXylZ8"><path d="M12 5v14M5 12h14" data-page-node-id="2X125U2gDA8dU62jZaDdHS"/></svg>新增</button>
        </div>
      </div>
-     <div class="card-body" id="aftersaleBody"></div>
+     <div class="card-body" id="aftersaleBody" data-page-node-id="eUY7M6DmuwXtqZ7NzDtADP"></div>
     </div>
    </section>
 
    <!-- 每日复盘+日报 -->
-   <section class="panel" id="panel-review">
-    <div class="section-tabs">
-     <div class="section-tab active" data-review-tab="auto">自动复盘</div>
-     <div class="section-tab" data-review-tab="report">日报生成</div>
-     <div class="section-tab" data-review-tab="history">历史日报</div>
+   <section class="panel" id="panel-review" data-page-node-id="6upakUV4Opc9gR1q6mDtvO">
+    <div class="section-tabs" data-page-node-id="yexwlDD1tWU6T8j31hM5g6">
+     <div class="section-tab active" data-review-tab="auto" data-page-node-id="25K73JdX2VPw0GXDfyqBOZ">自动复盘</div>
+     <div class="section-tab" data-review-tab="report" data-page-node-id="jbzeS8iiAWAUAbWu7zIKQG">日报生成</div>
+     <div class="section-tab" data-review-tab="history" data-page-node-id="7Dm5pyHEfiZDKUpQ8EQSyR">历史日报</div>
     </div>
 
-    <div class="card" id="reviewAuto">
-     <div class="card-h">
-       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-9-9c2.5 0 4.7 1 6.4 2.6"/><path d="M21 4v5h-5"/></svg>
-       <div class="ttl"><b>今日自动复盘</b><small>基于今日业务汇总</small></div>
-       <div class="act"><button class="btn btn-ghost" data-action="copy" data-id="autoReviewText"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>复制</button></div>
+    <div class="card" id="reviewAuto" data-page-node-id="0MZ8JSxQc4KjVFjYSMXW8K">
+     <div class="card-h" data-page-node-id="FNqXfkRj9NGCTOgNkZLDbw">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="KKM8MPmh6PCdseheOLY4Yr"><path d="M21 12a9 9 0 11-9-9c2.5 0 4.7 1 6.4 2.6" data-page-node-id="HpOVF0TsYvjVHHSDS2liLN"/><path d="M21 4v5h-5" data-page-node-id="JnrFIRtO5W9vsCyR3GAOt4"/></svg>
+       <div class="ttl" data-page-node-id="wMEDjKt3FCZryRP6qUeZUe"><b data-page-node-id="e8FAfS9wioLohyW8Gq42L3">今日自动复盘</b><small data-page-node-id="CffkAt9gE5qaaTcDJ7vuUC">基于今日业务汇总</small></div>
+       <div class="act" data-page-node-id="fvVnKl7UXHen3mNH4Qiuo3"><button class="btn btn-ghost" data-action="copy" data-id="autoReviewText" data-page-node-id="LjDO6gYhR17vFGdIbRZto5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="BGXn2lj1nNfI5kzd9FlmcD"><rect x="9" y="9" width="13" height="13" rx="2" data-page-node-id="hNIG74RZ8186z21SD42803"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" data-page-node-id="2Bqp6KPGCKCJEpXkFCgDBG"/></svg>复制</button></div>
      </div>
-     <div class="card-body">
-      <div class="report-area" id="autoReviewText"></div>
+     <div class="card-body" data-page-node-id="1ogMKQJJ6ZJrIp6B9LiGUi">
+      <div class="report-area" id="autoReviewText" data-page-node-id="IEJaGqBASQEHJpQoOoDvVw"></div>
      </div>
     </div>
 
-    <div class="card hide" id="reviewReport">
-     <div class="card-h">
-       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-       <div class="ttl"><b>日报生成器</b><small>输入今天大概工作，一键生成格式日报</small></div>
+    <div class="card hide" id="reviewReport" data-page-node-id="I3V6S2GtqxxmKzvTZHuhCy">
+     <div class="card-h" data-page-node-id="HkljLXZbRul0919Nu9DhfM">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="LvD41yMurNaiaADQE9s7IG"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" data-page-node-id="wE6Ho4rTM6pBzcQbnroylz"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" data-page-node-id="9ZYf77hTD0Gqo4FXlG3CAF"/></svg>
+       <div class="ttl" data-page-node-id="49XKo9lWNUC2nCfiuO1ODx"><b data-page-node-id="47uJkOeNlXKYDhwglUjZmj">日报生成器</b><small data-page-node-id="4PKmO7hfNtpeAjcFrMS855">输入今天大概工作，一键生成格式日报</small></div>
      </div>
-     <div class="card-body">
-      <div class="field">
-        <label>今天大致做了什么（自由输入）</label>
+     <div class="card-body" data-page-node-id="pn4EDWQNBlDn5LOw8132TI">
+      <div class="field" data-page-node-id="8CkInyLpuMEbNUmQnveJ0U">
+        <label data-page-node-id="txTbYiy5fqTWxO9yYGvBwB">今天大致做了什么（自由输入）</label>
         <textarea id="reportInput" placeholder="例：上午和俄罗斯客户Игорь确认了20台LED屏订单报价，下午制作效果图发给客户..."></textarea>
       </div>
-      <div class="row" style="align-items:center;gap:12px;margin:2px 0 12px;flex-wrap:wrap">
-        <label class="checkbox-line" style="margin:0"><input type="checkbox" id="includeFollowup"> 自动汇总今日跟进（写入日报正文）</label>
-        <button class="bbtn" data-action="fill-followup" title="把今日需跟进的任务汇总填入上方文本框">填入今日跟进</button>
+      <div class="row" style="align-items:center;gap:12px;margin:2px 0 12px;flex-wrap:wrap" data-page-node-id="nh8TYin7EtJ23B3FTsK1EY">
+        <label class="checkbox-line" style="margin:0" data-page-node-id="8fwB6EhmTijihHLHvI5jt7"><input type="checkbox" id="includeFollowup" data-page-node-id="gdu1a3o55O5sDz8aC8FGUg"> 自动汇总今日跟进（写入日报正文）</label>
+        <button class="bbtn" data-action="fill-followup" title="把今日需跟进的任务汇总填入上方文本框" data-page-node-id="yohAJIO3brC9IQadTqiIjH">填入今日跟进</button>
       </div>
-      <div class="field">
-        <label>日报格式模板（可编辑，{date}和{content}是占位符）</label>
+      <div class="field" data-page-node-id="Z3NL3B6sEbgKcumViOJnuL">
+        <label data-page-node-id="msQ5DiFNKlmtyyb1iWEGU4">日报格式模板（可编辑，{date}和{content}是占位符）</label>
         <textarea id="reportFormat" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px">【{date} 日报】
 一、今日完成
 {content}
@@ -583,59 +587,59 @@ footer{position:relative;z-index:2;max-width:1320px;margin:6px auto 0;padding:0 
 三、心得与问题
 （请补充）</textarea>
       </div>
-      <div class="row" style="margin-bottom:12px">
-        <button class="btn btn-primary" data-action="gen-report"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>生成日报</button>
-        <button class="btn btn-ghost" data-action="copy" data-id="reportOutput"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>复制结果</button>
-        <button class="btn btn-ok" data-action="save-report"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>保存到历史</button>
+      <div class="row" style="margin-bottom:12px" data-page-node-id="wN9H72SD0Of6FX651i5Iq7">
+        <button class="btn btn-primary" data-action="gen-report" data-page-node-id="w8JoTwYlFmrzwMmPzS76Fb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="W1EVs9JL5K1iCjghYbbKfB"><path d="M22 11.08V12a10 10 0 11-5.93-9.14" data-page-node-id="FJsZX1AkwEKHtRkkUUWp1a"/><path d="M22 4L12 14.01l-3-3" data-page-node-id="4ypMAGFAcL0lq1MjFKL5NO"/></svg>生成日报</button>
+        <button class="btn btn-ghost" data-action="copy" data-id="reportOutput" data-page-node-id="txjsXpVVdBP4wi1ZTe1UKW"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="KZN38jSQt4CTDeDQS7SuGL"><rect x="9" y="9" width="13" height="13" rx="2" data-page-node-id="dib080Kab6258O6H5B2S5p"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" data-page-node-id="uVIQZRryJh9L8MmTWgpbCr"/></svg>复制结果</button>
+        <button class="btn btn-ok" data-action="save-report" data-page-node-id="wowJJFtTbzuyqaD0s58mX0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="907cOGPmoDuuRa11QqNWmj"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" data-page-node-id="B7K3Yx9LVtrFZLfJZxPGOo"/><path d="M17 21v-8H7v8M7 3v5h8" data-page-node-id="24YShcF6t7NRQCka75mgPc"/></svg>保存到历史</button>
       </div>
-      <div class="report-area empty" id="reportOutput">（点击"生成日报"查看结果）</div>
+      <div class="report-area empty" id="reportOutput" data-page-node-id="neJdiav2xQC2ejmv1N556v">（点击"生成日报"查看结果）</div>
      </div>
     </div>
 
-    <div class="card hide" id="reviewHistory">
-     <div class="card-h">
-       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-       <div class="ttl"><b>历史日报</b><small>所有保存的日报都在这里</small></div>
+    <div class="card hide" id="reviewHistory" data-page-node-id="E4cdR1BVNMF92HaqP3u9ju">
+     <div class="card-h" data-page-node-id="a1pJ5U201OLXnUPU2bW9ct">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="N0HPikh14mTIEKgO6gwIEh"><circle cx="12" cy="12" r="10" data-page-node-id="IByK7cg6a8g1tPfC42JLsl"/><path d="M12 6v6l4 2" data-page-node-id="IWhR4SZ4E8HDtXX0yMekkq"/></svg>
+       <div class="ttl" data-page-node-id="fUj8YUvfpJ93KNwq2TV66y"><b data-page-node-id="x3HGbX7FMQ8d7g8Slelms3">历史日报</b><small data-page-node-id="lodrTIcCbSGfOLNAvjy56P">所有保存的日报都在这里</small></div>
      </div>
-     <div class="card-body" id="historyBody"></div>
+     <div class="card-body" id="historyBody" data-page-node-id="iEnBMnPF60gSCuxM8ClacV"></div>
     </div>
    </section>
 
    <!-- 个人生活 -->
-   <section class="panel" id="panel-life">
-    <div class="stat-grid" id="lifeStats"></div>
+   <section class="panel" id="panel-life" data-page-node-id="G3VEGF7rRG5EvFDOoM06py">
+    <div class="stat-grid" id="lifeStats" data-page-node-id="SAEhpfFuRoMIY88ipFGgzQ"></div>
 
-    <div class="card">
-     <div class="card-h">
-       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 22a4 4 0 100-8 4 4 0 000 8zM10 4l-7 7 4 4 7-7-4-4z"/></svg>
-       <div class="ttl"><b>健身打卡</b><small>本周目标 4 次 · 点击格子打卡</small></div>
-       <div class="act" id="fitSummary"></div>
+    <div class="card" data-page-node-id="KF12i9D2Xfa6bRmJv0goTw">
+     <div class="card-h" data-page-node-id="hBz3Qp7M0l77Nl3r4B2y8k">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="mAB2z37UyHRjeBgxm8FOfG"><path d="M18 22a4 4 0 100-8 4 4 0 000 8zM10 4l-7 7 4 4 7-7-4-4z" data-page-node-id="2p3imD6WmeEitLSs4WV2LH"/></svg>
+       <div class="ttl" data-page-node-id="Uj7NleutmmjnrdLuawM9jK"><b data-page-node-id="tvkIvb46hbKE2TejqJMqih">健身打卡</b><small data-page-node-id="h8S9JQBYDDJWMqUL7rmBQS">本周目标 4 次 · 点击格子打卡</small></div>
+       <div class="act" id="fitSummary" data-page-node-id="XDwlqdhcd2o67dfDD8xKIG"></div>
      </div>
-     <div class="card-body">
-      <div class="fit-grid" id="fitGrid"></div>
-      <div style="margin-top:10px;font-size:12px;color:var(--mut)" id="fitTip">每周日 24:00 自动重置；进度按自然周计算</div>
+     <div class="card-body" data-page-node-id="E8SJIU0NKamfL8JCArqCMO">
+      <div class="fit-grid" id="fitGrid" data-page-node-id="Il1gHst84Gr2KY9lF3Kon9"></div>
+      <div style="margin-top:10px;font-size:12px;color:var(--mut)" id="fitTip" data-page-node-id="bHoPYkAAOnAAqUzikLSzDv">每周日 24:00 自动重置；进度按自然周计算</div>
      </div>
     </div>
 
-    <div class="card">
-     <div class="card-h">
-       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
-       <div class="ttl"><b>22:10 别熬夜</b><small>每天 22:10 准时提醒你入眠</small></div>
-       <div class="act">
-        <button class="btn btn-ghost" data-action="set-night"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>设置时间</button>
+    <div class="card" data-page-node-id="s2G4lVr36zckmgRiJhrFTK">
+     <div class="card-h" data-page-node-id="5kKtDNW80rJbuB6pCwbc4z">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="nXIfGI395rgyt1BLWyITlO"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z" data-page-node-id="JwbkwDEH1tIo6fiygCtptI"/></svg>
+       <div class="ttl" data-page-node-id="0i5Zbi9d6Rj9iwfTmhbHPV"><b data-page-node-id="Q8qBcpIE1W4CUaam3nEyoh">22:10 别熬夜</b><small data-page-node-id="RccsjXbJ28C34lStWYOjeg">每天 22:10 准时提醒你入眠</small></div>
+       <div class="act" data-page-node-id="kABtEcqollR4jZOwAqf446">
+        <button class="btn btn-ghost" data-action="set-night" data-page-node-id="k4o4RMUkzOsEHGbOcf9cIj"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="bZ42yepzkNdhnPDrq5Ay9t"><circle cx="12" cy="12" r="3" data-page-node-id="mPnjAWKyVcwUS39ccUMdwg"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" data-page-node-id="ghBjSiStAJZbpWcW4Ys7cL"/></svg>设置时间</button>
        </div>
      </div>
-     <div class="card-body" id="nightSettingsBody"></div>
+     <div class="card-body" id="nightSettingsBody" data-page-node-id="4OxGH4cK07pgHK31iheGV3"></div>
     </div>
    </section>
 
-   <section class="panel" id="panel-remind">
-    <div class="card">
-     <div class="card-h">
-       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg>
-       <div class="ttl"><b>提醒铃声</b><small>到点轻柔响铃 + 弹窗，不再错过安排</small></div>
+   <section class="panel" id="panel-remind" data-page-node-id="z90WKcuqADEm7BaWx2UpD6">
+    <div class="card" data-page-node-id="F1vJMDXyQ9Sc6AskA88quz">
+     <div class="card-h" data-page-node-id="CQPSD60xJsMGOKfyIduvWI">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="Idrmohibya3c7UwVn1gRez"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0" data-page-node-id="2CG6DzAkQgQkiFapxGbJdy"/></svg>
+       <div class="ttl" data-page-node-id="E6z84bduvTcksFM5OEGwhB"><b data-page-node-id="jvkYw3zlfVXHr1DkuhHsfk">提醒铃声</b><small data-page-node-id="TnnH4qeAc8XrnfwEXg9ry8">到点轻柔响铃 + 弹窗，不再错过安排</small></div>
      </div>
-     <div class="card-body" id="remindBody"></div>
+     <div class="card-body" id="remindBody" data-page-node-id="dYACBVGbFCZDm6pFH7LD1Y"></div>
     </div>
    </section>
 
@@ -644,36 +648,36 @@ footer{position:relative;z-index:2;max-width:1320px;margin:6px auto 0;padding:0 
 </main>
 
 <!-- 批量删除栏 -->
-<div class="batch-bar hide" id="batchBar">
-  <span class="bc" id="batchCount">已选 0 项</span>
-  <button class="bbtn ghost" data-action="batch-all">全选本页</button>
-  <button class="bbtn danger" id="batchDel" data-action="batch-del" disabled>删除选中</button>
-  <button class="bbtn ghost" data-action="batch-cancel">取消</button>
+<div class="batch-bar hide" id="batchBar" data-page-node-id="DgTOBvvCGFeZNpdqmaIOKX">
+  <span class="bc" id="batchCount" data-page-node-id="AIqMt7E973YsT4e2jKqopM">已选 0 项</span>
+  <button class="bbtn ghost" data-action="batch-all" data-page-node-id="iWYZebyeUMNVGf2SehKlHM">全选本页</button>
+  <button class="bbtn danger" id="batchDel" data-action="batch-del" disabled data-page-node-id="7bk2FdYcTpFdVpoSqxx1SV">删除选中</button>
+  <button class="bbtn ghost" data-action="batch-cancel" data-page-node-id="h6SMHETWrj495PJKdo2boq">取消</button>
 </div>
 
-<nav class="bottom-tab" id="btmTabs"></nav>
-<footer>Journey · 数据仅保存在本机浏览器 localStorage，建议每周导出备份一次。</footer>
+<nav class="bottom-tab" id="btmTabs" data-page-node-id="T15Mi8cm9h4jsWZD3LbI4q"></nav>
+<footer data-page-node-id="RvJL66QPwvZxRYY8Ob0lLG">Journey · 数据仅保存在本机浏览器 localStorage，建议每周导出备份一次。</footer>
 
 <!-- 提醒弹窗 -->
-<div id="reminderPop">
-  <svg class="rp-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg>
-  <div class="rp-text" id="rpText"></div>
-  <button class="rp-btn" data-action="remind-ok">知道了</button>
+<div id="reminderPop" data-page-node-id="CzNsjPOEHAsN7qmDwqvuV1">
+  <svg class="rp-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="5BzGZdry4mSsV3vxHVVP2W"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0" data-page-node-id="rG7BPXhJ9mh0Uu9eMAe3NL"/></svg>
+  <div class="rp-text" id="rpText" data-page-node-id="1YSsEPjBflYYbncNkrbjGE"></div>
+  <button class="rp-btn" data-action="remind-ok" data-page-node-id="aZSsQe08TVUwCEREDBmm9t">知道了</button>
 </div>
 
 <!-- Modal -->
-<div class="overlay" id="modal">
- <div class="sheet">
-  <div class="sheet-h">
-   <b id="modalTitle">新增</b>
-   <button class="close" data-action="close-modal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+<div class="overlay" id="modal" data-page-node-id="q2WMRifEshw5wHLU0mrWyY">
+ <div class="sheet" data-page-node-id="gJvw1963eM0fMEO91J7c3c">
+  <div class="sheet-h" data-page-node-id="lHGKbelEnS4FEDFBdgTmrX">
+   <b id="modalTitle" data-page-node-id="FF0l4Lgh1oY03jht4S1jHA">新增</b>
+   <button class="close" data-action="close-modal" data-page-node-id="MYUyDEbr7GRHwnB7mAoP44"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="aAqJDtBHU33opZfuKP8I8z"><path d="M18 6L6 18M6 6l12 12" data-page-node-id="NNvvW8aW9Lidl87vE5q8EU"/></svg></button>
   </div>
-  <div id="modalBody"></div>
+  <div id="modalBody" data-page-node-id="dlVAAz7J9Nmv5A7O7ZdbQN"></div>
  </div>
 </div>
 
 <!-- Toast -->
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" data-page-node-id="ylEmbDduKuFnEkCLdl8i4y"></div>
 <script>
 /* ===== Utilities ===== */
 function $(id){return document.getElementById(id);}
@@ -771,7 +775,7 @@ var MODULES={
 var PROJECT_STAGES=['草图','效果图','视频','方案定稿','客户确认','完成'];
 
 /* ===== Date helpers ===== */
-function isOverdue(dueAt,done){return dueAt && !done && diffDays(today(),dueAt)<0;}
+function isOverdue(dueAt,done){return !!dueAt && !done && diffDays(today(),dueAt)>0;}
 function isToday(d){return fmtDate(d)==today();}
 function dateLabelPlain(d){
   if(!d)return '';
@@ -792,6 +796,18 @@ function addTask(data){
   data.createdAt=today();
   if(!data.done)data.done=false;
   if(!data.lastFollow)data.lastFollow=today();
+  // 优先级：'1'=优先；ord 决定同组内先后（小在前）
+  data.prio=(data.prio==='1'||data.prio===1)?1:0;
+  var peers=store.tasks.filter(function(t){return !t.done&&(t.prio?1:0)===data.prio;});
+  if(data.prio){
+    var minOrd=Infinity;
+    peers.forEach(function(t){var o=t.ord==null?1e12:t.ord;if(o<minOrd)minOrd=o;});
+    data.ord=(minOrd===Infinity)?1:minOrd-1;   // 新优先任务插到优先区最前
+  }else{
+    var maxOrd=0;
+    peers.forEach(function(t){var o=t.ord==null?0:t.ord;if(o>maxOrd)maxOrd=o;});
+    data.ord=maxOrd+1;                          // 普通任务排普通区最后
+  }
   store.tasks.unshift(data);
   save('tasks',store.tasks);
   showToast('已新增：'+(data.title||data.type));
@@ -824,6 +840,48 @@ function nextRepeatDate(d,type){
 }
 function repeatLabel(v){
   return v==='daily'?'每天':v==='10days'?'每10天':v==='30days'?'每30天':v==='yearly'?'每年':null;
+}
+/* ===== 优先级与手动排序 ===== */
+// 排序规则：优先(⚡)在前 → ord 小在前 → 截止日早在前（老数据无 ord 自动兜底）
+function cmpTasks(a,b){
+  var ap=a.prio?0:1, bp=b.prio?0:1;
+  if(ap!==bp)return ap-bp;
+  var ao=a.ord==null?1e12:a.ord, bo=b.ord==null?1e12:b.ord;
+  if(ao!==bo)return ao-bo;
+  var ad=a.dueAt||'9999-99-99', bd=b.dueAt||'9999-99-99';
+  return ad<bd?-1:ad>bd?1:0;
+}
+function togglePrio(id){
+  var t=store.tasks.find(function(x){return x.id===id;});
+  if(!t)return;
+  t.prio=t.prio?0:1;
+  if(t.prio){
+    // 升为优先：插到优先区最前（可用 ↓ 下移调整）
+    var minOrd=Infinity;
+    store.tasks.forEach(function(x){if(!x.done&&x.prio&&x.id!==id){var o=x.ord==null?1e12:x.ord;if(o<minOrd)minOrd=o;}});
+    t.ord=(minOrd===Infinity)?1:minOrd-1;
+  }else{
+    var maxOrd=0;
+    store.tasks.forEach(function(x){if(!x.done&&!x.prio&&x.id!==id){var o=x.ord==null?0:x.ord;if(o>maxOrd)maxOrd=o;}});
+    t.ord=maxOrd+1;   // 降回普通：排普通区最后
+  }
+  save('tasks',store.tasks);
+  showToast(t.prio?'已设为优先，自动排在最前':'已取消优先');
+}
+function moveTask(id,dir){
+  var t0=store.tasks.find(function(x){return x.id===id;});
+  if(!t0)return;
+  // 只在同优先级组内移动（优先区和普通区各自排序）
+  var list=store.tasks.filter(function(x){return !x.done&&(x.prio?1:0)===(t0.prio?1:0);}).sort(cmpTasks);
+  var i=-1;
+  list.forEach(function(x,k){if(x.id===id)i=k;});
+  if(i<0)return;
+  var j=i+dir;
+  if(j<0||j>=list.length){showToast(t0.prio?('已在优先区'+(dir<0?'最前':'最后')):('已到'+(dir<0?'顶':'底')));return;}
+  list.forEach(function(x,k){if(x.ord==null)x.ord=1e12+k;});
+  var tmp=list[i].ord;list[i].ord=list[j].ord;list[j].ord=tmp;
+  save('tasks',store.tasks);
+  renderAll();
 }
 function setTaskRemind(id,when){
   var t=store.tasks.find(function(x){return x.id===id;});
@@ -1186,13 +1244,14 @@ function renderToday(){
   var items=[];
   store.tasks.forEach(function(t){
     if(t.done)return;
-    var overdue=isOverdue(t.dueAt,true);
+    var overdue=isOverdue(t.dueAt,t.done);
     var isT=isToday(t.dueAt);
     if(!overdue && !isT)return;
     items.push({tag:t.module,tagTxt:modLabel(t.module)+'·'+t.type,
       title:t.title||(t.customer||'')+(t.orderNo?' ['+t.orderNo+']':''),
       meta:dateLabelPlain(t.dueAt),
       overdue:overdue,
+      prio:t.prio,
       action:'toggle',actionId:t.id});
   });
   var fitLeft=Math.max(0,4-fitnessCountThisWeek());
@@ -1233,9 +1292,12 @@ function renderToday(){
       title:t.title||(t.customer||'未命名')+(t.orderNo?' ['+t.orderNo+']':''),
       meta:(t.dueAt?'截止 '+dateLabelPlain(t.dueAt):'未设截止')+(t.repeat&&repeatLabel(t.repeat)?' · '+repeatLabel(t.repeat):'')+' · 可设跟进频率',
       overdue:false,
+      prio:t.prio,
       action:'deal-ops',actionId:t.id});
   });
+  // 排序：优先(⚡)置顶 → 逾期红 → 客户跟进 → 其余
   items.sort(function(a,b){
+    if((b.prio?1:0)!==(a.prio?1:0))return (b.prio?1:0)-(a.prio?1:0);
     if((b.overdue?1:0)!==(a.overdue?1:0))return (b.overdue?1:0)-(a.overdue?1:0);
     return (a.tag==='follow'?0:1)-(b.tag==='follow'?0:1);
   });
@@ -1244,7 +1306,7 @@ function renderToday(){
   if(items.length>0){
     h='';
     items.forEach(function(it){
-      var cls=it.overdue?'over':it.tag;
+      var cls=it.overdue?'over':(it.prio?'prio':it.tag);
       var btn;
       if(it.action==='follow-ops'){
         btn='<div class="tday-ops">'
@@ -1264,6 +1326,7 @@ function renderToday(){
       } else if(it.action==='deal-ops'){
         btn='<div class="tday-ops">'
           +'<button class="task-check" data-action="toggle" data-id="'+it.actionId+'" title="标记完成"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M20 6L9 17l-5-5"/></svg></button>'
+          +'<button class="mini2'+(it.prio?' ok':'')+'" data-action="toggle-prio" data-id="'+it.actionId+'" title="优先级">'+(it.prio?'已优先':'优先')+'</button>'
           +'<span class="snooze-wrap">'
           +'<button class="mini2 snz" data-action="set-repeat" data-id="'+it.actionId+'">🔁 频率</button>'
           +'<div class="snooze-menu" style="display:none" data-snooze-menu>'
@@ -1361,13 +1424,10 @@ function renderDeals(){
   var list=tasksBy('deals');
   if(filter==='open')list=list.filter(function(t){return !t.done;});
   else if(filter==='done')list=list.filter(function(t){return t.done;});
-  else if(filter==='over')list=list.filter(function(t){return isOverdue(t.dueAt,true);});
+  else if(filter==='over')list=list.filter(function(t){return isOverdue(t.dueAt,t.done);});
   list.sort(function(a,b){
     if(a.done!==b.done)return a.done?1:-1;
-    if(!a.dueAt&&!b.dueAt)return 0;
-    if(!a.dueAt)return 1;
-    if(!b.dueAt)return -1;
-    return new Date(a.dueAt)-new Date(b.dueAt);
+    return cmpTasks(a,b);
   });
   var h='';
   h+='<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap"><button class="bbtn" data-action="gen-followup">生成客户跟进待办（含本周建议）</button></div>';
@@ -1379,8 +1439,7 @@ function renderFinance(){
   var list=tasksBy('finance');
   list.sort(function(a,b){
     if(a.done!==b.done)return a.done?1:-1;
-    if(!a.dueAt)return 1; if(!b.dueAt)return -1;
-    return new Date(a.dueAt)-new Date(b.dueAt);
+    return cmpTasks(a,b);
   });
   var h='';
   if(list.length===0)h=emptyHtml('暂无收款/报关代办','点右上"新增"开始录入');
@@ -1391,7 +1450,7 @@ function renderAftersale(){
   var list=tasksBy('aftersale');
   list.sort(function(a,b){
     if(a.done!==b.done)return a.done?1:-1;
-    return (a.dueAt||'')<(b.dueAt||'')?-1:1;
+    return cmpTasks(a,b);
   });
   var h='';
   if(list.length===0)h=emptyHtml('暂无售后任务','点右上"新增"开始售后处理');
@@ -1406,7 +1465,7 @@ function renderAftersale(){
 }
 function taskRowHtml(t){
   var typeOpt=(MODULES[t.module]&&MODULES[t.module].types.find(function(x){return x.k===t.type;}))||{c:'tag-mute'};
-  var cls=t.done?'done':'';
+  var cls=t.done?'done':(t.prio?'prio':'');
   var repeatTxt=t.repeat?repeatLabel(t.repeat):'';
   var remindTxt=t.remindAt?'· 提醒 '+fmtMD(t.remindAt)+(t.remindAt.length>10?' '+t.remindAt.slice(11,16):''):'';
   var amt=t.amount?(t.amount+' '+esc(t.currency||'¥')):'';
@@ -1420,6 +1479,7 @@ function taskRowHtml(t){
   h+='<span class="tag '+typeOpt.c+'">'+esc(t.type)+'</span>';
   if(t.customer)h+='<span class="tag tag-mute">'+esc(t.customer)+'</span>';
   if(amt)h+='<span class="tag tag-green">'+esc(amt)+'</span>';
+  if(t.prio)h+='<span class="tag tag-gold">优先</span>';
   if(t.dueAt)h+='<span class="tag '+(isOverdue(t.dueAt,t.done)?'tag-red':isToday(t.dueAt)?'tag-orange':'tag-mute')+'">'+dateLabelPlain(t.dueAt)+'</span>';
   if(repeatTxt)h+='<span class="tag tag-mute">· '+repeatTxt+'</span>';
   if(remindTxt)h+='<span class="tag tag-gold">'+remindTxt+'</span>';
@@ -1427,6 +1487,11 @@ function taskRowHtml(t){
   if(t.note)h+='<div class="note">'+esc(t.note)+'</div>';
   h+='</div>';
   h+='<div class="task-ops">';
+  if(!t.done){
+    h+='<button class="mini'+(t.prio?' prio-on':'')+'" data-action="toggle-prio" data-id="'+t.id+'" title="'+(t.prio?'取消优先':'设为优先，排最前')+'"><svg viewBox="0 0 24 24" fill="'+(t.prio?'currentColor':'none')+'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg></button>';
+    h+='<button class="mini" data-action="move-task" data-id="'+t.id+'" data-dir="-1" title="上移"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>';
+    h+='<button class="mini" data-action="move-task" data-id="'+t.id+'" data-dir="1" title="下移"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></button>';
+  }
   h+='<button class="mini" data-action="remind" data-id="'+t.id+'" title="设置提醒"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg>提醒</button>';
   h+='<button class="mini del" data-action="del-task" data-id="'+t.id+'" title="删除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M6 6l1 14a2 2 0 002 2h6a2 2 0 002-2l1-14"/></svg></button>';
   h+='</div></div>';
@@ -1461,7 +1526,7 @@ function renderProjects(){
 function renderReview(){
   var doneToday=store.tasks.filter(function(t){return t.done && (t.doneAt===today());});
   var doneAll=store.tasks.filter(function(t){return t.done;});
-  var overdue=store.tasks.filter(function(t){return !t.done && isOverdue(t.dueAt,true);});
+  var overdue=store.tasks.filter(function(t){return !t.done && isOverdue(t.dueAt,t.done);});
   var todayDue=store.tasks.filter(function(t){return !t.done && isToday(t.dueAt);});
   var lines=[];
   lines.push('【'+today()+' 复盘】');
@@ -1658,6 +1723,10 @@ function showTaskForm(module,id){
   h+='<div class="row"><div class="field"><label>截止日期</label><input type="date" name="dueAt" value="'+esc(t&&t.dueAt)+'"></div>';
   h+='<div class="field"><label>提醒时间</label><input type="datetime-local" name="remindAt" value="'+esc(t&&t.remindAt)+'"></div></div>';
   h+='<div class="field"><label>重复周期</label><select name="repeat">'+repeatOpts+'</select></div>';
+  h+='<div class="field"><label>优先级</label><select name="prio">'
+    +'<option value="0"'+(!t||!t.prio?' selected':'')+'>普通</option>'
+    +'<option value="1"'+(t&&t.prio?' selected':'')+'>优先（排最前面）</option>'
+    +'</select></div>';
   if(ledBox){
     h+='<div class="field"><label class="checkbox-line"><input type="checkbox" name="hasLED" '+(t&&t.hasLED?'checked':'')+' id="tf_hasLED">此订单含 LED 屏幕（开启年度亮度提醒）</label></div>';
     h+='<div class="field" id="tf_ledBox" style="display:'+((t&&t.hasLED)?'block':'none')+'"><label>客户收货日期</label><input type="date" name="deliveryDate" value="'+esc(t&&t.deliveryDate)+'"><div style="font-size:11.5px;color:var(--muter);margin-top:5px">收到货后建议亮度 75%，每年 +5%；系统会在每年这一天自动挂上提醒任务</div></div>';
@@ -1697,6 +1766,16 @@ function submitTask(id,module){
   var f=$('taskForm');if(!f)return;
   var data=Object.fromEntries(new FormData(f).entries());
   if(!data.type)return showToast('请选择类型','err');
+  data.prio=(data.prio==='1')?1:0;
+  // 编辑已有任务改为优先时，插到优先区最前
+  if(id){
+    var cur=store.tasks.find(function(x){return x.id===id;});
+    if(cur&&data.prio&&!cur.prio){
+      var minOrd2=Infinity;
+      store.tasks.forEach(function(x){if(!x.done&&x.prio&&x.id!==id){var o=x.ord==null?1e12:x.ord;if(o<minOrd2)minOrd2=o;}});
+      data.ord=(minOrd2===Infinity)?1:minOrd2-1;
+    }
+  }
   if(module==='aftersale' && data.hasLED && data.deliveryDate){
     data.hasLED=true;
     data.ledNextYear=fmtDate(addDays(data.deliveryDate,365));
@@ -1765,7 +1844,7 @@ function submitNight(){
 function buildFollowupSummary(){
   var doneToday=store.tasks.filter(function(t){return t.done && t.doneAt===today();});
   var dueToday=store.tasks.filter(function(t){return !t.done && isToday(t.dueAt);});
-  var overdue=store.tasks.filter(function(t){return !t.done && isOverdue(t.dueAt,true);});
+  var overdue=store.tasks.filter(function(t){return !t.done && isOverdue(t.dueAt,t.done);});
   var name=function(t){return t.title||t.customer||t.type||'未命名';};
   var lines=['【今日跟进汇总】'];
   lines.push('· 已完成（'+doneToday.length+'）：'+(doneToday.map(name).join('、')||'无'));
@@ -2193,6 +2272,8 @@ document.addEventListener('click',function(e){
   var id=el.getAttribute('data-id');
   if(a==='close-modal')closeModal();
   else if(a==='toggle'){toggleTask(id);renderAll();}
+  else if(a==='toggle-prio'){togglePrio(id);renderAll();}
+  else if(a==='move-task'){moveTask(id,parseInt(el.getAttribute('data-dir')||'0',10));}
   else if(a==='del-task'){if(confirm('删除这条任务？')){delTask(id);renderAll();}}
   else if(a==='del-project'){if(confirm('删除这个项目？')){delProject(id);renderAll();}}
   else if(a==='del-word'){delWord(id);renderAll();}
