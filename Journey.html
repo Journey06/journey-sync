@@ -815,11 +815,15 @@ function toggleTask(id){
 }
 function nextRepeatDate(d,type){
   d=new Date(d);
-  if(type==='10days')d.setDate(d.getDate()+10);
+  if(type==='daily')d.setDate(d.getDate()+1);
+  else if(type==='10days')d.setDate(d.getDate()+10);
   else if(type==='30days')d.setDate(d.getDate()+30);
   else if(type==='yearly')d.setFullYear(d.getFullYear()+1);
   else d.setDate(d.getDate()+1);
   return d;
+}
+function repeatLabel(v){
+  return v==='daily'?'每天':v==='10days'?'每10天':v==='30days'?'每30天':v==='yearly'?'每年':null;
 }
 function setTaskRemind(id,when){
   var t=store.tasks.find(function(x){return x.id===id;});
@@ -1216,6 +1220,21 @@ function renderToday(){
       overdue:true,
       action:'follow-ops',actionId:s.customer});
   });
+  // 今日新增的业务跟进：当天在「业务跟进」里新增的任务自动进队列，
+  // 即使截止日还没到也能看到，可直接勾完成 / 设跟进频率
+  var shown={};
+  items.forEach(function(it){if(it.action==='toggle')shown[it.actionId]=1;});
+  var td0=today();
+  store.tasks.forEach(function(t){
+    if(t.done||t.module!=='deals')return;
+    if(shown[t.id])return;                 // 已因「逾期/今天到期」在队列里，不重复
+    if((t.createdAt||'')!==td0)return;     // 只收今天新增的
+    items.push({tag:'follow',tagTxt:'业务跟进·今天新增',
+      title:t.title||(t.customer||'未命名')+(t.orderNo?' ['+t.orderNo+']':''),
+      meta:(t.dueAt?'截止 '+dateLabelPlain(t.dueAt):'未设截止')+(t.repeat&&repeatLabel(t.repeat)?' · '+repeatLabel(t.repeat):'')+' · 可设跟进频率',
+      overdue:false,
+      action:'deal-ops',actionId:t.id});
+  });
   items.sort(function(a,b){
     if((b.overdue?1:0)!==(a.overdue?1:0))return (b.overdue?1:0)-(a.overdue?1:0);
     return (a.tag==='follow'?0:1)-(b.tag==='follow'?0:1);
@@ -1233,11 +1252,26 @@ function renderToday(){
           +'<span class="snooze-wrap">'
           +'<button class="mini2 snz" data-action="snooze-follow" data-customer="'+esc(it.actionId)+'">📅 N天后</button>'
           +'<div class="snooze-menu" style="display:none" data-snooze-menu>'
+          +'<button data-action="snooze-follow" data-customer="'+esc(it.actionId)+'" data-days="1">每天提醒（直到处理）</button>'
           +'<button data-action="snooze-follow" data-customer="'+esc(it.actionId)+'" data-days="3">3 天后提醒</button>'
           +'<button data-action="snooze-follow" data-customer="'+esc(it.actionId)+'" data-days="7">一周后（推荐）</button>'
           +'<button data-action="snooze-follow" data-customer="'+esc(it.actionId)+'" data-days="14">两周后</button>'
           +'<button data-action="snooze-follow" data-customer="'+esc(it.actionId)+'" data-days="30">一个月后</button>'
           +'<button data-action="snooze-follow" data-customer="'+esc(it.actionId)+'" data-days="60">两个月后</button>'
+          +'</div></span>'
+          +'<button class="btn btn-primary" data-action="goto" data-tab="deals" style="font-size:11.5px;padding:5px 10px">详情</button>'
+          +'</div>';
+      } else if(it.action==='deal-ops'){
+        btn='<div class="tday-ops">'
+          +'<button class="task-check" data-action="toggle" data-id="'+it.actionId+'" title="标记完成"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M20 6L9 17l-5-5"/></svg></button>'
+          +'<span class="snooze-wrap">'
+          +'<button class="mini2 snz" data-action="set-repeat" data-id="'+it.actionId+'">🔁 频率</button>'
+          +'<div class="snooze-menu" style="display:none" data-snooze-menu>'
+          +'<button data-action="set-repeat" data-id="'+it.actionId+'" data-v="daily">每天跟进</button>'
+          +'<button data-action="set-repeat" data-id="'+it.actionId+'" data-v="10days">每10天（小满跟进）</button>'
+          +'<button data-action="set-repeat" data-id="'+it.actionId+'" data-v="30days">每30天</button>'
+          +'<button data-action="set-repeat" data-id="'+it.actionId+'" data-v="yearly">每年</button>'
+          +'<button data-action="set-repeat" data-id="'+it.actionId+'" data-v="none">不重复（仅一次）</button>'
           +'</div></span>'
           +'<button class="btn btn-primary" data-action="goto" data-tab="deals" style="font-size:11.5px;padding:5px 10px">详情</button>'
           +'</div>';
@@ -1373,7 +1407,7 @@ function renderAftersale(){
 function taskRowHtml(t){
   var typeOpt=(MODULES[t.module]&&MODULES[t.module].types.find(function(x){return x.k===t.type;}))||{c:'tag-mute'};
   var cls=t.done?'done':'';
-  var repeatTxt=t.repeat==='10days'?'· 每10天':t.repeat==='30days'?'· 每30天':t.repeat==='yearly'?'· 每年':'';
+  var repeatTxt=t.repeat?repeatLabel(t.repeat):'';
   var remindTxt=t.remindAt?'· 提醒 '+fmtMD(t.remindAt)+(t.remindAt.length>10?' '+t.remindAt.slice(11,16):''):'';
   var amt=t.amount?(t.amount+' '+esc(t.currency||'¥')):'';
   var h='<div class="task-row '+cls+'">';
@@ -1387,7 +1421,7 @@ function taskRowHtml(t){
   if(t.customer)h+='<span class="tag tag-mute">'+esc(t.customer)+'</span>';
   if(amt)h+='<span class="tag tag-green">'+esc(amt)+'</span>';
   if(t.dueAt)h+='<span class="tag '+(isOverdue(t.dueAt,t.done)?'tag-red':isToday(t.dueAt)?'tag-orange':'tag-mute')+'">'+dateLabelPlain(t.dueAt)+'</span>';
-  if(repeatTxt)h+='<span class="tag tag-mute">'+repeatTxt+'</span>';
+  if(repeatTxt)h+='<span class="tag tag-mute">· '+repeatTxt+'</span>';
   if(remindTxt)h+='<span class="tag tag-gold">'+remindTxt+'</span>';
   h+='</div>';
   if(t.note)h+='<div class="note">'+esc(t.note)+'</div>';
@@ -1609,6 +1643,7 @@ function showTaskForm(module,id){
   var typeOpts=types.map(function(x){return '<option value="'+x.k+'"'+(t&&t.type===x.k?' selected':'')+'>'+x.k+'</option>';}).join('');
   var repeatOpts=[
     {v:'none',l:'不重复'},
+    {v:'daily',l:'每天跟进'},
     {v:'10days',l:'每10天（小满跟进）'},
     {v:'30days',l:'每30天'},
     {v:'yearly',l:'每年'}
@@ -2228,6 +2263,26 @@ document.addEventListener('click',function(e){
     save('followIndex',store.followIndex);
     renderToday();renderDeals();
     showToast('已设：'+cn2+' · '+days+' 天后（'+fmtDate(nextDate)+'）自动回到列表');
+  }
+  else if(a==='set-repeat'){
+    var tid=el.getAttribute('data-id')||'';
+    var v=el.getAttribute('data-v')||'';
+    if(!tid)return;
+    // 第一次点「🔁 频率」主按钮 → 展开菜单（无 data-v）
+    if(!v){
+      var wrap2=el.parentElement;
+      var menu2=wrap2?wrap2.querySelector('[data-snooze-menu]'):null;
+      if(menu2){menu2.style.display=menu2.style.display==='block'?'none':'block';}
+      return;
+    }
+    var tt=store.tasks.find(function(x){return x.id===tid;});
+    if(!tt)return;
+    tt.repeat=(v==='none')?null:v;
+    // 设了「每天」但还没截止日时，默认把截止日补成今天，让周期有起点
+    if(tt.repeat==='daily'&&!tt.dueAt)tt.dueAt=today();
+    save('tasks',store.tasks);
+    renderAll();
+    showToast(tt.repeat?('跟进频率已设为「'+repeatLabel(tt.repeat)+'」，完成后自动生成下一次'):'已改为不重复');
   }
   else if(a==='save-report')saveReport();
   else if(a==='export')exportAll();
