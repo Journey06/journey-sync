@@ -2485,7 +2485,12 @@ function streakCountFrom(dts){
   if(!dts||!dts.length)return 0;
   var set={}; dts.forEach(function(x){set[x]=1;});
   var cur=new Date(td+'T00:00:00');
-  if(!set[td])cur.setDate(cur.getDate()-1);   // 今天还没背 → 从昨天算，保持连续
+  if(!set[td]){
+    // 兼容旧版（过 0 点就算新一天）在 00:00~04:00 之间记下的日历日期
+    var cal=today();
+    if(cal!==td&&set[cal])cur=new Date(cal+'T00:00:00');
+    else cur.setDate(cur.getDate()-1);   // 今天还没背 → 从昨天算，保持连续
+  }
   var n=0;
   while(set[fmtDate(cur)]){n++;cur.setDate(cur.getDate()-1);}
   return n;
