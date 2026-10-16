@@ -434,6 +434,31 @@ footer{position:relative;z-index:2;max-width:1320px;margin:6px auto 0;padding:0 
 .sync-badge.busy{color:#9a6b00;background:#fdf0d2}
 .sync-badge.ok{color:#1f7a3d;background:#e2f5e8}
 .sync-badge.err{color:#b23030;background:#fbe3e3}
+/* ===== 最近打卡条 + 词典搜索结果 ===== */
+.stk-wrap{margin:14px 0 0;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.stk-head{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--mut);margin-bottom:8px;flex-wrap:wrap}
+.stk-grid{display:grid;grid-template-columns:repeat(14,1fr);gap:3px}
+.stk-day{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;height:40px;border-radius:7px;background:#F3F5F9;color:var(--muter);font-size:13px;font-weight:800;border:1px solid transparent}
+.stk-day small{font-size:9px;font-weight:600;opacity:.75}
+.stk-day.on{background:#E7F4EC;color:#1E8E4F;border-color:#BFE3CE}
+.kw-find{margin-top:10px}
+.kw-find-head{font-size:12.5px;color:var(--mut);margin:8px 0 6px}
+.find-row{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;margin-bottom:6px}
+.find-row.in{background:#FAFBFD}
+.find-main{flex:1;min-width:0;cursor:pointer;font-size:13px;line-height:1.55}
+.find-tr{color:var(--mut);font-size:12px}
+.find-mean{color:var(--ink);font-size:13px;margin-top:2px;word-break:break-word}
+.find-act{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.find-in{font-size:11.5px;color:var(--green);font-weight:700;white-space:nowrap}
+@media(max-width:768px){
+  .stk-grid{gap:2px}
+  .stk-day{height:38px;font-size:12px}
+  .stk-day small{font-size:8px}
+  .find-row{padding:10px}
+  .find-main{font-size:14px}
+  .find-mean,.find-tr{font-size:12.5px}
+  .find-act .mini2{min-height:44px;padding:0 12px;font-size:14px}
+}
 </style>
 </head>
 <body data-page-node-id="oyCkyWCCjf0MDcu0lPD6Wd">
@@ -777,6 +802,16 @@ function pad(n){return n<10?'0'+n:n;}
 function fmtDate(d){d=new Date(d);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
 function fmtMD(d){d=new Date(d);return (d.getMonth()+1)+'月'+pad(d.getDate())+'日';}
 function today(){return fmtDate(new Date());}
+/* 「打卡业务日」：以北京时间为准，凌晨 4 点之前算前一天
+   （熬夜到 01:30 背完单词，算的是昨天的卡，不会因为过了 0 点就断签）
+   用 UTC 运算推导，所以手机/电脑无论设成哪个时区，结果都是北京时间那一天 */
+var CHECKIN_CUTOFF_HOUR=4;
+function bizToday(){
+  var bj=Date.now()+8*3600000;                       // 这一刻的北京时间
+  var h=new Date(bj).getUTCHours();
+  var d=new Date(bj-(h<CHECKIN_CUTOFF_HOUR?86400000:0));
+  return d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate());
+}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function diffDays(a,b){a=new Date(a);b=new Date(b);return Math.round((a-b)/86400000);}
 function addDays(d,n){d=new Date(d);d.setDate(d.getDate()+n);return d;}
@@ -802,7 +837,7 @@ var store={
   // 客户跟进索引：客户名 → {lastFollow:'YYYY-MM-DD', nextFollowAt:'YYYY-MM-DD'}
   // 用于「✓ 已跟进」消除项 + 「N 天后提醒」自动回到列表
   followIndex:load('followIndex',{}),
-  settings:Object.assign({nightOn:true,nightTime:'22:10',wordLimit:10,newPerDay:3,lifePerDay:5,soundOn:true,speechRate:0.6,wordRemindOn:true,wordRemindTime:'20:00',syncEnabled:false,syncToken:'',syncServer:'',syncRev:0},load('settings',{}))
+  settings:Object.assign({nightOn:true,nightTime:'22:10',wordLimit:10,newPerDay:3,lifePerDay:5,soundOn:true,speechRate:0.6,wordRemindOn:true,wordRemindTime:'20:00',syncEnabled:false,syncToken:'',syncServer:'',syncRev:0,syBackend:'',ghToken:'',ghGistId:'',wordBankVer:0},load('settings',{}))
 };
 
 /* 老数据迁移：把「连续/累积计数器」补成「打卡日期集合」
@@ -2219,11 +2254,11 @@ function wordNeedTaps(d,id){
 }
 function rateWord(id,lv){
   var w=byId(id);if(!w)return;
-  if(!store.deck||store.deck.date!==today())ensureDeck();
+  if(!store.deck||store.deck.date!==bizToday())ensureDeck();
   var d=store.deck;if(!d)return;
   d.struggled=d.struggled||{};
   d.knownTaps=d.knownTaps||{};
-  w.level=lv; w.lastRate=lv; w.lastReview=today();
+  w.level=lv; w.lastRate=lv; w.lastReview=bizToday();
   // 当天是否首次看到该词（首次评级决定「连续认识」是否 +1）
   d.firstRated=d.firstRated||{};
   var first=(d.firstRated[id]===undefined);
@@ -2233,9 +2268,9 @@ function rateWord(id,lv){
     if(first){
       w.recogStreak=(w.recogStreak||0)+1;            // 仅「首次看到就认识」才累计连续天数
       if(w.recogStreak>=GRAD_DAYS && !w.graduated){
-        w.graduated=true; w.gradNext=fmtDate(addDays(today(),GRAD_WEEK));
+        w.graduated=true; w.gradNext=fmtDate(addDays(bizToday(),GRAD_WEEK));
       }else if(w.graduated){
-        w.gradNext=fmtDate(addDays(today(),GRAD_WEEK)); // 毕业后的每周检查：记牢则顺延一周
+        w.gradNext=fmtDate(addDays(bizToday(),GRAD_WEEK)); // 毕业后的每周检查：记牢则顺延一周
       }
     }
     d.knownTaps[id]=(d.knownTaps[id]||0)+1;
@@ -2272,7 +2307,7 @@ function rateWord(id,lv){
   showToast('已记录：'+(lv===1?'不熟悉':'不认识')+' · 稍后重现，今天要连认 2 次才算完成');
 }
 function addWord(w,m,t,exs){
-  store.words.push({id:uid(),word:w,translit:m||'',meaning:t||'',examples:exs||[],bank:'biz',level:1,r:0,lastReview:null,nextReview:today(),addedAt:today(),graduated:false,recogStreak:0,firstSeen:null,gradNext:null,lastRate:null});
+  store.words.push({id:uid(),word:w,translit:m||'',meaning:t||'',examples:exs||[],bank:'biz',level:1,r:0,lastReview:null,nextReview:bizToday(),addedAt:bizToday(),graduated:false,recogStreak:0,firstSeen:null,gradNext:null,lastRate:null});
   save('words',store.words);
   renderWords();
 }
@@ -2284,7 +2319,7 @@ function delWord(id){
 }
 function byId(id){return store.words.find(function(x){return x.id===id;});}
 function ensureDeck(){
-  var td=today();
+  var td=bizToday();
   if(store.deck&&store.deck.date===td&&Array.isArray(store.deck.ids)&&store.deck.ids.length&&store.deck.firstRated&&store.deck.ver===DECK_VER)return;
   buildDeck();
 }
@@ -2329,7 +2364,7 @@ function weaveLife(others,life){
   return out;
 }
 function buildDeck(){
-  var n=store.settings.wordLimit||10, cap=store.settings.newPerDay||3, td=today();
+  var n=store.settings.wordLimit||10, cap=store.settings.newPerDay||3, td=bizToday();
   var prev=(store.deck&&store.deck.date===td)?store.deck:null;
   // 复习池：已学过（firstSeen 不为空）且未毕业、连续认识<5 天，每天必复习 + 已毕业且到周复习日
   // ⚠️ 生活词由 pickLifeIds 单独排队，必须从复习池里排除，否则会重复入队
@@ -2396,13 +2431,14 @@ function activeDeck(){return store.deck?(store.deck.ids||[]).filter(function(i){
 function deckTotal(){return store.deck?(store.deck.ids||[]).length:0;}
 function deckDone(){return store.deck?((store.deck.done||[]).length):0;}
 function checkIn(){
-  var s=store.streak||{lastDate:null,count:0,total:0,dates:[]}, td=today();
+  var s=store.streak||{lastDate:null,count:0,total:0,dates:[]}, td=bizToday();
   if(!Array.isArray(s.dates))s.dates=[];
   // 往「打卡日期集合」里加今天（天然去重，两端同步合并取并集不会重复计数）
   if(s.dates.indexOf(td)<0)s.dates.push(td);
   s.dates.sort();
   s.lastDate=td;
   store.streak=s;                 // 必须先挂上再推导，否则首次打卡会算出「连续 0 天」
+  streakMirrorWrite(s.dates);     // 额外写一份镜像，主数据损坏也能还原
   s.count=calcStreakCount();      // 由日期集合推导，两端算法一致
   s.total=s.dates.length;
   save('streak',s);
@@ -2414,13 +2450,39 @@ function streakDates(){
   return s.dates;
 }
 function hasCheckedIn(td){
-  var d=streakDates(), t=td||today();
+  var d=streakDates(), t=td||bizToday();
   return d.indexOf(t)>=0;
 }
+/* 打卡日期镜像：localStorage 单独存一份，防「主记录读不回来」导致连续天数归零 */
+var STREAK_MIRROR='wb_journey_streak_dates';
+function streakMirrorRead(){
+  try{var v=localStorage.getItem(STREAK_MIRROR);var a=v?JSON.parse(v):[];return Array.isArray(a)?a:[];}catch(e){return [];}
+}
+function streakMirrorWrite(dates){
+  try{localStorage.setItem(STREAK_MIRROR,JSON.stringify(dates||[]));}catch(e){}
+}
+/* 开机自愈：把主记录、镜像、旧版 lastDate+count 三处并集起来，
+   任一处没坏就能把连续天数还原（这是「打卡了但天数不涨」的兜底） */
+function reconcileStreak(){
+  var s=store.streak||{}, set={};
+  (Array.isArray(s.dates)?s.dates:[]).forEach(function(d){if(d)set[d]=1;});
+  streakMirrorRead().forEach(function(d){if(d)set[d]=1;});
+  if(s.lastDate){
+    var base=fmtDate(s.lastDate); if(base&&base!=='NaN-NaN-NaN')set[base]=1;
+    var n=Math.max(0,parseInt(s.count,10)||0), d=new Date(String(s.lastDate)+'T00:00:00');
+    if(!isNaN(d.getTime()))for(var i=1;i<n;i++){d.setDate(d.getDate()-1);set[fmtDate(d)]=1;}
+  }
+  var dates=Object.keys(set).filter(function(x){return /^\d{4}-\d{2}-\d{2}$/.test(x);}).sort();
+  store.streak={lastDate:dates.length?dates[dates.length-1]:null,dates:dates,count:0,total:dates.length};
+  store.streak.count=calcStreakCount();
+  streakMirrorWrite(dates);
+  save('streak',store.streak);
+  return dates.length;
+}
 // 连续天数：从今天（今天没打卡则从昨天）往回数，集合里连续有多少天
-function calcStreakCount(){
-  var dts=streakDates(), td=today();
-  if(dts.length===0)return 0;
+function streakCountFrom(dts){
+  var td=bizToday();
+  if(!dts||!dts.length)return 0;
   var set={}; dts.forEach(function(x){set[x]=1;});
   var cur=new Date(td+'T00:00:00');
   if(!set[td])cur.setDate(cur.getDate()-1);   // 今天还没背 → 从昨天算，保持连续
@@ -2428,16 +2490,19 @@ function calcStreakCount(){
   while(set[fmtDate(cur)]){n++;cur.setDate(cur.getDate()-1);}
   return n;
 }
+function calcStreakCount(){return streakCountFrom(streakDates());}
 function calcStreakTotal(){return streakDates().length;}
 function doWordCheckIn(){
   ensureDeck();
+  reconcileStreak();             // 打卡前先自愈一次，避免主记录异常导致「打卡了天数不涨」
   var total=deckTotal(), done=deckDone();
   if(total===0){showToast('今天还没有单词可背');return;}
   if(done<total){showToast('还有 '+(total-done)+' 个单词没背完，背完才能打卡');return;}
-  if(hasCheckedIn()){showToast('今天已经打卡啦 ✓');return;}   // 按日期集合判断，手机打过电脑也算
+  if(hasCheckedIn()){showToast('今天已经打卡啦 ✓（'+bizToday()+'）');return;}   // 按日期集合判断，手机打过电脑也算
   checkIn();
   renderWords();renderLife();
   showToast('打卡成功 · 连续 '+calcStreakCount()+' 天 · 累积 '+calcStreakTotal()+' 天');
+  schedulePush();                // 立刻回传云端，另一台设备下拉就能看到
 }
 function reshuffleDeck(){
   if(!store.deck)return;
@@ -2446,7 +2511,7 @@ function reshuffleDeck(){
   save('deck',store.deck);renderWords();
 }
 function mkWord(a,bank){
-  return {id:uid(),word:a[0],translit:a[1],meaning:a[2],examples:a[3]||[],bank:bank||'biz',level:1,r:0,lastReview:null,nextReview:today(),addedAt:today(),graduated:false,recogStreak:0,firstSeen:null,gradNext:null,lastRate:null};
+  return {id:uid(),word:a[0],translit:a[1],meaning:a[2],examples:a[3]||[],bank:bank||'biz',level:1,r:0,lastReview:null,nextReview:bizToday(),addedAt:bizToday(),graduated:false,recogStreak:0,firstSeen:null,gradNext:null,lastRate:null};
 }
 function seedWords(){
   if(store.words.length>0)return;
@@ -2968,8 +3033,7 @@ function hideWordPop(){
 function wordPopAdd(){
   var tok=wordPopTok; if(!tok)return;
   if(findWordByToken(tok)){showToast('词库里已经有这个词了');return;}
-  addWord(tok,'',EX_GLOSS[tok.toLowerCase()]||'');
-  showToast('已加入词库：'+tok);
+  addWordFromSearch(tok,EX_GLOSS[tok.toLowerCase()]||'',ruToLat(tok));
   showWordPop(tok);
 }
 
@@ -2995,8 +3059,158 @@ function showWordDetail(id){
   h+='<div class="row" style="margin-top:8px"><button class="btn btn-ghost" data-action="close-modal">关闭</button></div>';
   openModal('查词 · '+w.word, h);
 }
+/* ===== 词典搜索：输俄语 / 中文 / 拼音，给出可加入词库的推荐词 ===== */
+// 俄语 → 拉丁转写（没有俄语键盘时，打拼音也能查：свет → svet）
+var RU_LAT={'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'shch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'};
+function ruToLat(s){return String(s||'').toLowerCase().split('').map(function(c){return RU_LAT[c]!==undefined?RU_LAT[c]:c;}).join('');}
+function normRu(s){return String(s||'').toLowerCase().replace(/ё/g,'е').trim();}
+var _searchIdx=null,_searchIdxN=-1;
+// 搜索索引 = 你的词库 + 内置离线词典（例句里出现过的 1000 多个俄语词形）
+function searchIndex(){
+  if(_searchIdx&&_searchIdxN===store.words.length)return _searchIdx;
+  var idx=[],have={};
+  store.words.forEach(function(w){
+    have[normRu(w.word)]=1;
+    idx.push({form:w.word,translit:w.translit||ruToLat(w.word),meaning:w.meaning||'',inLib:true,id:w.id,bank:(w.bank==='life'?'life':'biz')});
+  });
+  Object.keys(EX_GLOSS).forEach(function(tok){
+    if(have[normRu(tok)])return;
+    idx.push({form:tok,translit:ruToLat(tok),meaning:EX_GLOSS[tok]||'',inLib:false,id:'',bank:'dict'});
+  });
+  _searchIdx=idx;_searchIdxN=store.words.length;
+  return idx;
+}
+function scoreHit(it,nq){
+  var f=normRu(it.form),m=String(it.meaning||'').toLowerCase(),t=String(it.translit||'').toLowerCase();
+  if(/[\u0400-\u04FF]/.test(nq)){          // 输入的是俄语
+    if(f===nq)return 100;
+    if(f.indexOf(nq)===0)return 82;
+    if(f.indexOf(nq)>=0)return 62;
+    if(t.indexOf(nq)===0)return 50;
+    if(t.indexOf(nq)>=0)return 30;
+  }else{                                    // 输入的是中文或拼音
+    if(m===nq)return 100;
+    if(m.indexOf(nq)===0)return 80;
+    if(m.indexOf(nq)>=0)return 60;
+    if(t===nq)return 56;
+    if(t.indexOf(nq)===0)return 46;
+    if(t.indexOf(nq)>=0)return 26;
+  }
+  return 0;
+}
+function searchWords(q,limit){
+  var raw=String(q||'').trim();
+  if(!raw)return [];
+  var nq=/[\u0400-\u04FF]/.test(raw)?normRu(raw):raw.toLowerCase();
+  var all=searchIndex(),out=[];
+  for(var i=0;i<all.length;i++){
+    var s=scoreHit(all[i],nq);
+    if(s>0)out.push({it:all[i],s:s});
+  }
+  out.sort(function(a,b){
+    if(b.s!==a.s)return b.s-a.s;
+    if(a.it.inLib!==b.it.inLib)return a.it.inLib?1:-1;  // 还没进词库的先推给你
+    return a.it.form.length-b.it.form.length;
+  });
+  return out.slice(0,limit||40).map(function(x){return x.it;});
+}
+// 从已有例句里给一个词形找现成例句，加入词库时一起带上
+function findExamplesFor(tok,max){
+  var t=normRu(tok),out=[],cap=max||3;
+  if(!t)return out;
+  var pat=t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/е/g,'[её]');
+  var rx=new RegExp('(^|[^\\u0400-\\u04FF])'+pat+'([^\\u0400-\\u04FF]|$)','i');
+  for(var i=0;i<store.words.length&&out.length<cap;i++){
+    var exs=store.words[i].examples||[];
+    for(var j=0;j<exs.length&&out.length<cap;j++){
+      if(rx.test(String(exs[j][0]||'')))out.push(exs[j]);
+    }
+  }
+  return out;
+}
+// 加入背诵词库：顺带带上能找到的例句，并放进今日队列末尾（今天就能背到）
+function addWordFromSearch(word,meaning,translit){
+  word=String(word||'').trim();
+  if(!word)return null;
+  if(findWordByToken(word)){showToast('词库里已经有这个词了');return null;}
+  var exs=findExamplesFor(word,3);
+  addWord(word,translit||ruToLat(word),meaning||'',exs);
+  var nw=store.words[store.words.length-1];
+  if(nw){
+    nw.firstSeen=bizToday();            // 标记「今天已学过」，明天起按复习词排队，不再占新词名额
+    save('words',store.words);
+    ensureDeck();
+    if(store.deck&&store.deck.ids.indexOf(nw.id)<0){
+      store.deck.ids.push(nw.id);
+      save('deck',store.deck);
+    }
+  }
+  renderWords();
+  showToast('已加入词库'+(exs.length?('，并带上 '+exs.length+' 条例句'):'')+' · 已放进今日队列');
+  return nw;
+}
+// 点推荐词：在词库里的直接开词条，不在词库的给「查义 + 加入」弹窗（可当查词用）
+function showFindDetail(word,meaning,translit,id){
+  if(id&&byId(id)){showWordDetail(id);return;}
+  var exs=findExamplesFor(word,3);
+  var h='';
+  h+='<div class="wd-head"><div><div class="wd-word">'+esc(word)+'</div>'
+    +'<div class="wd-tr">'+esc(translit||ruToLat(word))+'</div></div>'
+    +'<button class="mini2" data-action="find-speak" data-w="'+esc(word)+'" style="margin-left:auto;min-height:44px;padding:0 14px;font-size:14px">朗读整词</button></div>';
+  h+='<div class="wd-mean">'+esc(meaning||'（暂无释义）')+'</div>';
+  h+='<div class="wd-stat"><span>不在你的词库</span><span>内置离线词典</span></div>';
+  h+='<div class="wd-sec">例句（'+exs.length+'）</div>';
+  if(!exs.length)h+='<div class="kw-empty">暂时没找到包含这个词的例句，加入词库后可自己补充</div>';
+  else exs.forEach(function(ex){
+    h+='<div class="wd-ex"><div class="wd-ex-ru">'+ruTokenHtml(ex[0])+'</div><div class="wd-ex-zh">'+esc(ex[1])+'</div></div>';
+  });
+  h+='<div class="row" style="margin-top:8px">'
+    +'<button class="btn btn-primary" data-action="find-add" data-w="'+esc(word)+'" data-m="'+esc(meaning||'')+'" data-t="'+esc(translit||'')+'">＋ 加入我的词库</button>'
+    +'<button class="btn btn-ghost" data-action="close-modal">关闭</button></div>';
+  openModal('查词 · '+word,h);
+}
+function streakStripHtml(){
+  var dates=streakDates(),set={},end=bizToday();
+  dates.forEach(function(d){set[d]=1;});
+  var h='';
+  for(var i=13;i>=0;i--){
+    var d=new Date(end+'T00:00:00');d.setDate(d.getDate()-i);
+    var iso=fmtDate(d),on=!!set[iso];
+    h+='<div class="stk-day'+(on?' on':'')+'" title="'+esc(iso)+(on?' 已打卡':' 未打卡')+'">'+(on?'✓':'')+'<small>'+esc(iso.slice(8))+'</small></div>';
+  }
+  return '<div class="stk-wrap"><div class="stk-head"><span>最近 14 天打卡（北京时间 04:00 前算前一天）</span>'
+    +'<span>连续 <b style="color:var(--green)">'+calcStreakCount()+'</b> 天 · 累积 <b style="color:var(--navy)">'+calcStreakTotal()+'</b> 天</span></div>'
+    +'<div class="stk-grid">'+h+'</div></div>';
+}
 function wordSearchInput(v){
   wordSearchTerm=(v||'').trim().toLowerCase();
+  /* ① 推荐词：内置词典 + 我的词库，可一键加入背诵词库，也可当查词用 */
+  var fbox=document.getElementById('wordFind');
+  if(fbox){
+    if(!wordSearchTerm)fbox.innerHTML='';
+    else{
+      var hits=searchWords(v,40),fh='';
+      if(!hits.length){
+        fh='<div class="kw-empty">没找到匹配的词。可以试试：中文查意思（如「灯箱」）、俄语查拼写（如 свет）、拼音查（如 dengxiang）。</div>';
+      }else{
+        fh='<div class="kw-find-head">推荐 <b style="color:var(--navy)">'+hits.length+'</b> 个词 · 点词条查意思和例句，点「＋ 加入」收进背诵词库</div>';
+        hits.forEach(function(it){
+          fh+='<div class="find-row'+(it.inLib?' in':'')+'">'
+            +'<div class="find-main" data-action="find-open" data-w="'+esc(it.form)+'" data-m="'+esc(it.meaning)+'" data-t="'+esc(it.translit)+'" data-id="'+esc(it.id||'')+'">'
+            +'<b>'+esc(it.form)+'</b> <span class="find-tr">'+esc(it.translit)+'</span>'
+            +(it.bank==='life'?' <span class="wtag wtag-life">生活</span>':(it.bank==='biz'?' <span class="wtag wtag-new">行业</span>':''))
+            +'<div class="find-mean">'+esc(it.meaning)+'</div></div>'
+            +'<div class="find-act">'
+            +'<button class="mini2" data-action="find-speak" data-w="'+esc(it.form)+'">🔊</button>'
+            +(it.inLib?'<span class="find-in">已在词库</span>'
+                      :'<button class="mini2" data-action="find-add" data-w="'+esc(it.form)+'" data-m="'+esc(it.meaning)+'" data-t="'+esc(it.translit)+'">＋ 加入</button>')
+            +'</div></div>';
+        });
+      }
+      fbox.innerHTML=fh;
+    }
+  }
+  /* ② 原有功能：过滤下方「完整词库」列表 */
   var box=document.getElementById('wordLibList');
   if(!box)return;
   var items=box.querySelectorAll('[data-lib-item]'), hit=0;
@@ -3009,7 +3223,7 @@ function wordSearchInput(v){
   }
   var tip=document.getElementById('wordLibTip');
   if(tip)tip.innerHTML=wordSearchTerm
-    ?('找到 <b style="color:var(--navy)">'+hit+'</b> 个匹配词（词库共 '+store.words.length+' 个）')
+    ?('我的词库里匹配 <b style="color:var(--navy)">'+hit+'</b> 个（共 '+store.words.length+' 个）')
     :('共 '+store.words.length+' 个词 · 点任意词条可查看全部例句与意思');
 }
 function renderWords(){
@@ -3084,9 +3298,12 @@ function renderWords(){
     });
     h+='</div>';
   }
-  // 查词：输俄语或中文都能查，结果按词头/释义/音标匹配
+  // 最近 14 天打卡明细（一眼看出哪天漏了，也能自己核对同步是否生效）
+  h+=streakStripHtml();
+  // 查词：输俄语 / 中文 / 拼音都能查，先给推荐词，再过滤我的词库
   h+='<div class="kw-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>'
-    +'<input id="wordSearch" type="text" placeholder="查词：输俄语或中文，如 цена / 价格" value="'+esc(wordSearchTerm)+'" oninput="wordSearchInput(this.value)"></div>';
+    +'<input id="wordSearch" type="text" placeholder="查词：俄语 / 中文 / 拼音，如 цена、价格、tsena" value="'+esc(wordSearchTerm)+'" oninput="wordSearchInput(this.value)"></div>';
+  h+='<div id="wordFind" class="kw-find"></div>';
   h+='<div id="wordLibTip" class="kw-empty"></div>';
   h+='<details id="wordLibBox" style="margin-top:6px"'+(wordSearchTerm?' open':'')+'><summary style="cursor:pointer;font-size:13px;color:var(--navy2);font-weight:700;padding:8px 0">查看完整词库（'+store.words.length+'）</summary>';
   h+='<div id="wordLibList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-top:10px">';
@@ -3557,34 +3774,102 @@ function syncFetch(url,opt,timeout,retry){
     throw e;
   });
 }
+/* ===== 云存储双后端 =====
+   server：自建 Node 同步服务器。⚠ Render 免费实例的磁盘是「临时盘」，
+           服务一休眠（闲置 15 分钟）/ 重启 / 重新部署，data/*.json 就被清空，
+           所以它只能当临时中转，长期同步会丢数据。
+   gist  ：GitHub 私密 Gist（永久保存 + 自带版本历史），推荐长期使用。 */
+function isGistMode(){return store.settings.syBackend==='gist' && !!store.settings.ghToken;}
+function syncReady(){
+  return !!(store.settings.syncEnabled&&store.settings.syncToken&&(syncBase()||(store.settings.ghToken&&store.settings.ghGistId)));
+}
+function ghFileName(){return 'journey-'+String(store.settings.syncToken||'default').replace(/[^A-Za-z0-9_-]/g,'')+'.json';}
+function ghHeaders(){
+  return {'Authorization':'Bearer '+String(store.settings.ghToken||'').trim(),
+          'Accept':'application/vnd.github+json','Content-Type':'application/json',
+          'X-GitHub-Api-Version':'2022-11-28'};
+}
+function ghError(status){
+  var map={401:'令牌无效或已过期，请重新生成',403:'令牌权限不足（需要 gist 权限）',404:'云端数据不存在',422:'数据被拒绝'};
+  var e=new Error(map[status]||('GitHub 返回 '+status));e.noRetry=true;return e;
+}
+function ghCall(path,opt){
+  return fetch('https://api.github.com'+path,Object.assign({headers:ghHeaders()},opt||{})).then(function(r){
+    return r.text().then(function(t){
+      var j=null;try{j=JSON.parse(t);}catch(e){}
+      if(!r.ok)throw ghError(r.status);
+      return j;
+    });
+  });
+}
+function parseCloud(txt){try{var j=JSON.parse(txt||'{}');return {ts:Number(j.ts)||0,data:j.data||null};}catch(e){return {ts:0,data:null};}}
+/* 在账号里找同名 gist；找不到就新建一个私密 gist（手机和电脑填同一房间号 → 自动连到同一个） */
+function ghConnect(cb){
+  if(!String(store.settings.ghToken||'').trim()){showToast('请先填入 GitHub 令牌','err');cb&&cb(null);return;}
+  var name=ghFileName();
+  setSyncBadge('busy','连接中…');
+  ghCall('/gists?per_page=100').then(function(list){
+    if(!Array.isArray(list))throw new Error('返回异常');
+    var hit=null;
+    list.forEach(function(g){if(!hit&&g&&g.files&&g.files[name])hit=g;});
+    if(hit){store.settings.ghGistId=hit.id;save('settings',store.settings);cb&&cb(hit);return null;}
+    var files={};files[name]={content:JSON.stringify({ts:0,data:null})};
+    return ghCall('/gists',{method:'POST',body:JSON.stringify({description:'Journey 工作台云同步（私密 gist，请勿删除）',public:false,files:files})})
+      .then(function(g){store.settings.ghGistId=g.id;save('settings',store.settings);cb&&cb(g);});
+  }).catch(function(e){setSyncBadge('err','连接失败');showToast('连接云端失败：'+e.message,'err');cb&&cb(null);});
+}
+function ghPull(){
+  if(!store.settings.ghGistId)return Promise.reject(ghError(404));
+  var name=ghFileName();
+  // 带 _=时间戳，绕过 GitHub 对 gist 的 CDN 缓存（约 60 秒）
+  return ghCall('/gists/'+store.settings.ghGistId+'?_='+Date.now()).then(function(g){
+    var f=g&&g.files&&g.files[name];
+    if(!f)return {ts:0,data:null};
+    if(f.truncated&&f.raw_url)return fetch(f.raw_url+'?_='+Date.now()).then(function(r){return r.text();}).then(parseCloud);
+    return parseCloud(f.content);
+  });
+}
+function ghPush(payload){
+  if(!store.settings.ghGistId)return Promise.reject(ghError(404));
+  var name=ghFileName(), files={};files[name]={content:JSON.stringify(payload)};
+  return ghCall('/gists/'+store.settings.ghGistId,{method:'PATCH',body:JSON.stringify({files:files})});
+}
+// 后端无关的拉 / 推（上面的业务代码不用关心数据存在哪）
+function cloudPull(){
+  if(isGistMode())return ghPull();
+  return syncFetch(syncBase()+'/api/pull?token='+encodeURIComponent(store.settings.syncToken),null,12000,true);
+}
+function cloudPush(payload){
+  if(isGistMode())return ghPush(payload).then(function(g){return {ok:true,ts:payload.ts,gist:g&&g.id};});
+  return syncFetch(syncBase()+'/api/push',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)},15000,true);
+}
 function schedulePush(){
-  if(!store.settings.syncEnabled||!store.settings.syncToken)return;
+  if(!syncReady())return;
   syncState.localTs=Date.now();
   if(syncState.pushTimer)clearTimeout(syncState.pushTimer);
   syncState.pushTimer=setTimeout(pushSync,1500);
 }
 function pushSync(){
-  if(!store.settings.syncEnabled||!store.settings.syncToken)return;
+  if(!syncReady())return;
   setSyncBadge('busy','同步中…');
   // 关键：推送前先拉取合并。否则本地旧数据会整体覆盖云端的另一端进度（签到天数被吃掉的元凶）
   pullSync(function(){
     var data={};SYNC_KEYS.forEach(function(k){data[k]=store[k];});
     var ts=Math.max(Date.now(),syncState.remoteTs+1);
     var payload={token:store.settings.syncToken,ts:ts,data:data};
-    syncFetch(syncBase()+'/api/push',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)},15000,true)
-      .then(function(j){
-        if(j&&j.ok){
-          syncState.remoteTs=ts;syncState.localTs=ts;
-          store.settings.syncRev=ts;save('settings',store.settings);
-          syncState.lastMsg='已上传 ts='+ts;
-          setSyncBadge('ok','已同步');
-        }else if(j&&j.conflict){
-          syncState.remoteTs=Number(j.ts)||syncState.remoteTs;
-          syncState.lastMsg='版本冲突，已重新合并';
-          pullSync();   // 拉下最新，下一轮再推
-        }else{syncState.lastMsg='服务器拒绝：'+((j&&j.error)||'未知');setSyncBadge('err','同步失败');}
-      })
-      .catch(function(e){syncState.lastMsg=(e&&e.message)||'网络失败';setSyncBadge('err','未连接');});
+    cloudPush(payload).then(function(j){
+      if(j&&j.ok){
+        syncState.remoteTs=ts;syncState.localTs=ts;
+        store.settings.syncRev=ts;save('settings',store.settings);
+        syncState.lastMsg='已上传 ts='+ts;
+        setSyncBadge('ok','已同步');
+      }else if(j&&j.conflict){
+        // 服务器上已有更新的版本：强制合并一次再重推（旧代码此处会立刻「跳过合并」，导致永远合不上）
+        syncState.remoteTs=Number(j.ts)||0;
+        syncState.lastMsg='版本冲突，已重新合并';
+        pullSync(function(){pushSync();},true);
+      }else{syncState.lastMsg='云端拒绝：'+((j&&j.error)||'未知');setSyncBadge('err','同步失败');}
+    }).catch(function(e){syncState.lastMsg=(e&&e.message)||'网络失败';setSyncBadge('err','未连接');});
   });
 }
 /* ===== 智能合并：解决「手机 + 电脑各背各的，整体覆盖会丢进度」 ===== */
@@ -3593,9 +3878,9 @@ function mergeStreak(local,remote){
   var a=(local&&Array.isArray(local.dates)&&local.dates.length)?local.dates:(local&&local.lastDate?[local.lastDate]:[]);
   var b=(remote&&Array.isArray(remote.dates)&&remote.dates.length)?remote.dates:(remote&&remote.lastDate?[remote.lastDate]:[]);
   var set={}; a.concat(b).forEach(function(d){if(d)set[d]=1;});
-  var dates=Object.keys(set).sort();
+  var dates=Object.keys(set).filter(function(x){return /^\d{4}-\d{2}-\d{2}$/.test(x);}).sort();
   return {lastDate:dates.length?dates[dates.length-1]:null, dates:dates,
-          count:0, total:dates.length};  // count 渲染时由集合推导，保证两端一致
+          count:streakCountFrom(dates), total:dates.length};  // 两端日期集合取并集，天数由集合推导，算法一致
 }
 // 今日牌组：已背单词取并集（手机背 A、B，电脑背 C、D → 合起来都算背过）
 function mergeDeck(local,remote){
@@ -3630,34 +3915,45 @@ function mergeWords(local,remote){
   });
   return order.map(function(k){return map[k];});
 }
-function pullSync(cb){
-  if(!store.settings.syncEnabled||!store.settings.syncToken){cb&&cb('off');return;}
-  var url=syncBase()+'/api/pull?token='+encodeURIComponent(store.settings.syncToken);
-  syncFetch(url,null,12000,true).then(function(j){
+/* 把云端数据合并进本地：只保存真正变化的项，避免每 15 秒无谓写盘 */
+function applyCloudMerge(data){
+  var before={};SYNC_KEYS.forEach(function(k){before[k]=JSON.stringify(store[k]);});
+  syncState.applying=true;
+  SYNC_KEYS.forEach(function(k){
+    if(data[k]===undefined)return;
+    // 签到 / 牌组 / 单词进度：智能合并，不整体覆盖（两端各背各的也能累加）
+    if(k==='streak'){store.streak=mergeStreak(store.streak,data[k]);}
+    else if(k==='deck'){store.deck=mergeDeck(store.deck,data[k]);}
+    else if(k==='words'){store.words=mergeWords(store.words,data[k]);}
+    else{store[k]=data[k];}
+  });
+  var changed=[];
+  SYNC_KEYS.forEach(function(k){
+    if(JSON.stringify(store[k])!==before[k]){changed.push(k);save(k,store[k]);}
+  });
+  syncState.applying=false;
+  return changed;
+}
+function pullSync(cb,force){
+  if(!syncReady()){cb&&cb('off');return;}
+  setSyncBadge('busy','同步中…');
+  cloudPull().then(function(j){
     if(!j||j.error){syncState.lastMsg=(j&&j.error)||'无数据';cb&&cb('empty');return;}
     if(!j.data){syncState.lastMsg='云端暂无数据';cb&&cb('empty');return;}
-    // 只跟「上次拉到的远端版本」比，不跟本地改动时间比
-    // （旧代码拿本地改动时间比较，导致本机一有改动就永远拉不到另一端的更新 ← 签到天数不涨的根因）
-    var rts=Number(j.ts)||0;
-    if(rts<=syncState.remoteTs){syncState.lastMsg='已是最新 ts='+rts;cb&&cb('same');return;}
     var has=false;SYNC_KEYS.forEach(function(k){var v=j.data[k];if(v&&((v.length||0)>0||Object.keys(v).length>0))has=true;});
     if(!has){syncState.lastMsg='云端数据为空，已跳过';cb&&cb('empty');return;}
-    syncState.applying=true;
-    SYNC_KEYS.forEach(function(k){
-      if(j.data[k]===undefined)return;
-      // 签到 / 牌组 / 单词进度：智能合并，不整体覆盖（两端各背各的也能累加）
-      if(k==='streak'){store.streak=mergeStreak(store.streak,j.data[k]);}
-      else if(k==='deck'){store.deck=mergeDeck(store.deck,j.data[k]);}
-      else if(k==='words'){store.words=mergeWords(store.words,j.data[k]);}
-      else{store[k]=j.data[k];}
-      save(k,store[k]);
-    });
-    syncState.applying=false;
-    syncState.remoteTs=rts;
+    var rts=Number(j.ts)||0;
+    // 无论远端版本号新旧都合并一次：合并是「并集 / 取更进步」，幂等且只会让数据更完整。
+    // 旧代码在 rts<=remoteTs 时直接跳过合并，一旦版本号判错就永远合不上（签到天数卡死的元凶之一）。
+    var changed=applyCloudMerge(j.data);
+    if(rts>syncState.remoteTs)syncState.remoteTs=rts;
     if((Number(store.settings.syncRev)||0)<rts){store.settings.syncRev=rts;save('settings',store.settings);}
-    syncState.lastMsg='已拉取 ts='+rts+' · 连续'+calcStreakCount()+'天';
-    renderAll();
+    syncState.lastMsg='已合并云端 · 连续'+calcStreakCount()+'天 · 累积'+calcStreakTotal()+'天';
     setSyncBadge('ok','已同步');
+    if(changed.length){
+      renderAll();
+      schedulePush();   // 把并集结果写回云端，另一台设备才拿得到
+    }
     cb&&cb('ok');
   }).catch(function(e){
     syncState.lastMsg=(e&&e.message)||'网络失败';
@@ -3669,33 +3965,71 @@ function initSync(){
   syncState.enabled=!!store.settings.syncEnabled;
   if(!syncState.enabled){setSyncBadge('off','未开启');return;}
   if(!store.settings.syncToken){store.settings.syncToken=genToken();save('settings',store.settings);}
-  syncState.remoteTs=Number(store.settings.syncRev)||0;
+  // 每次打开都从 0 开始比：保证启动时必定完整拉取合并一次
+  // （旧代码用本机存下的 syncRev 当基线，基线一旦偏大就会永久跳过远端更新）
+  syncState.remoteTs=0;
   setSyncBadge('busy','同步中…');
-  pullSync(function(){ pushSync(); });   // 先合并云端，再把合并结果回写，保证云端是完整的
+  var startSync=function(){ pullSync(function(){ pushSync(); },true); };   // 先合并云端，再把合并结果回写，保证云端是完整的
+  if(isGistMode()&&!store.settings.ghGistId){
+    // 本机第一次用 GitHub 云端：自动去找（或创建）同一个 gist，不用手动点「连接」
+    ghConnect(function(g){ if(g)startSync(); else setSyncBadge('err','未连接云端'); });
+  }else{
+    startSync();
+  }
   if(syncState.timer)clearInterval(syncState.timer);
-  syncState.timer=setInterval(function(){ if(store.settings.syncEnabled)pullSync(); },15000);
+  syncState.timer=setInterval(function(){ if(syncReady())pullSync(); },15000);
 }
 function showSyncSettings(){
   var s=store.settings;
   var enabled=s.syncEnabled?'on':'';
+  var gist=(s.syBackend==='gist');
+  var dates=streakDates();
   var html=''
    +'<div style="font-size:13px;color:var(--mut);line-height:1.65;margin-bottom:14px">'
-   +'开启后，本工作台会把 <strong>任务 / 项目 / 单词 / 健身 / 日报 / 提醒</strong> 实时同步到云端，手机和电脑打开同一网址即自动一致，<strong>不再需要手动传数据</strong>。'
-   +'两部设备填<strong>同一个房间号</strong>即可共享同一份数据。</div>'
+   +'开启后，本工作台会把 <strong>任务 / 项目 / 单词 / 健身 / 日报 / 提醒 / 签到</strong> 合并同步到云端，手机和电脑填<strong>同一个房间号</strong>即自动一致。</div>'
    +'<div class="rem-row"><div class="rl"><b>开启自动同步</b><small>关闭则仅本机保存</small></div>'
    +'<button class="sw '+enabled+'" data-action="toggle-sync" title="开启/关闭自动同步"></button></div>'
+   // ---- 后端选择 ----
+   +'<div class="field" style="margin-top:12px"><label>云端存哪里（这决定数据会不会丢）</label>'
+   +'<div class="row" style="margin-bottom:6px">'
+   +'<button class="btn '+(gist?'btn-primary':'btn-ghost')+'" data-action="sync-backend" data-v="gist" style="flex:1">GitHub 云端（推荐 · 永久）</button>'
+   +'<button class="btn '+(!gist?'btn-primary':'btn-ghost')+'" data-action="sync-backend" data-v="server" style="flex:1">自建服务器（临时）</button>'
+   +'</div>'
+   +'<div style="font-size:12px;line-height:1.65;padding:8px 10px;border-radius:8px;background:'+(gist?'#EAF7EF':'#FDF3E7')+';color:'+(gist?'#1E6E44':'#8A5A1B')+'">'
+   +(gist
+     ? '✅ 数据存在你自己账号的<b>私密 Gist</b> 里，永久保存，带版本历史。<b>免费实例休眠也不会丢。</b>'
+     : '⚠️ Render 免费实例的磁盘是<b>临时盘</b>：闲置 15 分钟休眠、或每次重新部署，服务端存的数据都会被清空 —— 这是「手机打了卡、电脑看不到」的根本原因。长期同步请用上面的 GitHub 云端。')
+   +'</div></div>'
+   // ---- Gist 配置 ----
+   +'<div class="field" style="margin-top:10px'+(gist?'':';opacity:.5')+'"><label>GitHub 令牌（只存在你本机浏览器里）</label>'
+   +'<input id="ghTokenIn" type="password" value="'+esc(s.ghToken||'')+'" placeholder="粘贴一个带 gist 权限的令牌">'
+   +'<div class="row" style="margin-top:8px">'
+   +'<button class="btn btn-ghost" data-action="gh-connect" style="flex:1">连接 / 创建云端</button>'
+   +'<button class="btn btn-ghost" data-action="gh-open">打开云端文件</button></div>'
+   +'<div style="font-size:12px;color:var(--muter);margin-top:6px;line-height:1.6">'
+   +'当前云端：<b>'+esc(s.ghGistId?('gist '+s.ghGistId):'未连接')+'</b> · 文件名 <b>'+esc(ghFileName())+'</b><br>'
+   +'令牌获取：GitHub → 头像 → Settings → Developer settings → Personal access tokens → Tokens(classic) → 勾选 <b>gist</b> → 生成后复制。'
+   +'换设备时把令牌+房间号填一样的即可。</div></div>'
+   // ---- 房间号 ----
    +'<div class="field" style="margin-top:10px"><label>房间号（两部设备填一样的）</label>'
    +'<div class="row"><input id="syncTokenIn" value="'+esc(s.syncToken||'')+'" placeholder="点“生成”或手动填写" style="flex:1">'
    +'<button class="btn btn-ghost" data-action="gen-token">生成</button><button class="btn btn-ghost" data-action="copy-token">复制</button></div>'
    +'<div style="font-size:12px;color:var(--muter);margin-top:6px">把房间号用微信发到另一台设备，在它上面填同样的号即可共享数据。</div></div>'
-   +'<div class="field" style="margin-top:6px"><label>同步服务器地址（一般留空＝用当前网址）</label>'
+   // ---- 服务器（仅在自建后端下展示）----
+   +'<div class="field" style="margin-top:6px'+(gist?'':';')+'"><label>同步服务器地址（自建后端用）</label>'
    +'<input id="syncServerIn" value="'+esc(s.syncServer||'')+'" placeholder="留空即用当前网站">'
    +'<div style="font-size:12px;margin-top:6px;padding:8px 10px;border-radius:8px;background:#F1F5F9;line-height:1.6">'
    +'实际请求地址：<b style="word-break:break-all">'+esc(syncBase()||location.origin)+'</b><br>'
    +'<span style="color:var(--muter)">若这里显示 <b>file://</b> 或 <b>github.io</b>，说明连不上同步服务器——必须填你的 Render 网址（如 https://journey-sync-xxxx.onrender.com）</span></div></div>'
+   // ---- 诊断 ----
+   +'<div style="margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:12px;line-height:1.8">'
+   +'<b style="color:var(--navy)">同步诊断</b><br>'
+   +'本机打卡日期：<b>'+dates.length+'</b> 天'+(dates.length?('（'+esc(dates[0])+' ~ '+esc(dates[dates.length-1])+'）'):'')+'<br>'
+   +'连续签到：<b style="color:var(--green)">'+calcStreakCount()+'</b> 天 · 累积 <b>'+calcStreakTotal()+'</b> 天<br>'
+   +'最近一次：<span style="color:var(--mut)">'+esc(syncState.lastMsg||'（还没同步过）')+'</span></div>'
    +'<div class="rem-row" style="margin-top:12px"><div class="rl"><b id="syncStatusTxt">状态：'+(enabled?'已开启':'未开启')+'</b></div>'
    +'<button class="btn btn-ghost" data-action="save-sync">保存设置</button><button class="btn btn-ghost" data-action="test-sync">立即同步</button></div>'
-   +'<div style="font-size:12px;color:var(--muter);margin-top:10px">说明：同步采用「最后修改时间优先」；清空数据不会跨设备删除（防误删）。两端都需联网才会同步；建议保持网页打开。</div>';
+   +'<div style="font-size:12px;color:var(--muter);margin-top:10px">说明：合并规则为「取并集 / 取更进步」，所以两端各背各的也能累加，不会互相覆盖；清空数据不会跨设备删除（防误删）。</div>';
   openModal('自动同步设置',html);
 }
 
@@ -3833,7 +4167,36 @@ document.addEventListener('click',function(e){
   else if(a==='toggle-sync'){store.settings.syncEnabled=!store.settings.syncEnabled;save('settings',store.settings);if(store.settings.syncEnabled&&!store.settings.syncToken){store.settings.syncToken=genToken();save('settings',store.settings);var _ti=document.getElementById('syncTokenIn');if(_ti)_ti.value=store.settings.syncToken;}var _sw=document.querySelector('[data-action="toggle-sync"]');if(_sw)_sw.className='sw '+(store.settings.syncEnabled?'on':'');var _st=document.getElementById('syncStatusTxt');if(_st)_st.textContent='状态：'+(store.settings.syncEnabled?'已开启':'未开启');if(store.settings.syncEnabled)initSync();else{if(syncState.timer)clearInterval(syncState.timer);setSyncBadge('off','未开启');}}
   else if(a==='gen-token'){var _g=document.getElementById('syncTokenIn');if(_g)_g.value=genToken();}
   else if(a==='copy-token'){var _c=document.getElementById('syncTokenIn');if(_c&&_c.value){if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(_c.value);showToast('房间号已复制');}}
-  else if(a==='save-sync'){var _t=document.getElementById('syncTokenIn'),_s=document.getElementById('syncServerIn');if(!_t)return;var tok=(_t.value||'').trim(),srv=(_s?(_s.value||'').trim():'');if(!/^[A-Za-z0-9_-]{1,40}$/.test(tok)){showToast('房间号只能是字母数字 _ -，1~40位','err');return;}store.settings.syncToken=tok;store.settings.syncServer=srv;save('settings',store.settings);closeModal();initSync();showToast('同步设置已保存');}
+  else if(a==='sync-backend'){
+    var _bv=el.getAttribute('data-v');
+    var _gt0=document.getElementById('ghTokenIn');if(_gt0)store.settings.ghToken=(_gt0.value||'').trim();
+    var _tk0=document.getElementById('syncTokenIn');if(_tk0&&(_tk0.value||'').trim())store.settings.syncToken=(_tk0.value||'').trim();
+    store.settings.syBackend=(_bv==='gist')?'gist':'server';
+    save('settings',store.settings);
+    showSyncSettings();
+    showToast(_bv==='gist'?'已选 GitHub 云端，点「连接 / 创建云端」':'已选自建服务器');
+  }
+  else if(a==='gh-connect'){
+    var _gt=document.getElementById('ghTokenIn');if(_gt)store.settings.ghToken=(_gt.value||'').trim();
+    var _tk=document.getElementById('syncTokenIn');if(_tk&&(_tk.value||'').trim())store.settings.syncToken=(_tk.value||'').trim();
+    if(!store.settings.syncToken)store.settings.syncToken=genToken();
+    store.settings.syBackend='gist';store.settings.syncEnabled=true;
+    save('settings',store.settings);
+    ghConnect(function(g){if(g){showToast('云端已连接 ✓ 开始同步');initSync();showSyncSettings();}});
+  }
+  else if(a==='gh-open'){
+    if(!store.settings.ghGistId){showToast('还没连接云端','err');return;}
+    window.open('https://gist.github.com/'+store.settings.ghGistId,'_blank');
+  }
+  else if(a==='save-sync'){
+    var _t=document.getElementById('syncTokenIn'),_s=document.getElementById('syncServerIn'),_g2=document.getElementById('ghTokenIn');
+    if(!_t)return;
+    var tok=(_t.value||'').trim(),srv=(_s?(_s.value||'').trim():'');
+    if(!/^[A-Za-z0-9_-]{1,40}$/.test(tok)){showToast('房间号只能是字母数字 _ -，1~40位','err');return;}
+    store.settings.syncToken=tok;store.settings.syncServer=srv;
+    if(_g2)store.settings.ghToken=(_g2.value||'').trim();
+    save('settings',store.settings);closeModal();initSync();showToast('同步设置已保存');
+  }
   else if(a==='test-sync'){
     if(!store.settings.syncEnabled){showToast('先打开「开启自动同步」','err');return;}
     setSyncBadge('busy','同步中…');
@@ -3875,6 +4238,9 @@ document.addEventListener('click',function(e){
   else if(a==='wpop-speak'){ if(wordPopTok)speak(wordPopTok); }
   else if(a==='wpop-detail'){ hideWordPop(); showWordDetail(id); }
   else if(a==='wpop-add'){ wordPopAdd(); }
+  else if(a==='find-add'){ addWordFromSearch(el.getAttribute('data-w')||'',el.getAttribute('data-m')||'',el.getAttribute('data-t')||''); }
+  else if(a==='find-speak'){ speak(el.getAttribute('data-w')||''); }
+  else if(a==='find-open'){ showFindDetail(el.getAttribute('data-w')||'',el.getAttribute('data-m')||'',el.getAttribute('data-t')||'',el.getAttribute('data-id')||''); }
   else if(a==='reveal-ex'){
     var ru2=el.querySelector('.wc-ex-ru');
     if(ru2)ru2.classList.remove('hide');
@@ -4057,6 +4423,7 @@ seedSamples();
 ensureIndustryWords();
 ensureLifeWords();
 backfillWordExamples();
+reconcileStreak();          // 开机自愈：把打卡日期集合从主记录 / 镜像 / 旧结构三处并起来
 renderAll();
 initSync();
 setInterval(renderNight,60000);
