@@ -3849,6 +3849,30 @@ function schedulePush(){
   if(syncState.pushTimer)clearTimeout(syncState.pushTimer);
   syncState.pushTimer=setTimeout(pushSync,1500);
 }
+/* 配置搬运码：把「后端 + 房间号 + 令牌 + 云端文件」打包成一段文本，
+   在另一台设备粘贴一次即可全部配好（省去重复填令牌） */
+function syncConfigCode(){
+  try{
+    return btoa(unescape(encodeURIComponent(JSON.stringify({
+      v:1,b:store.settings.syBackend||'server',r:store.settings.syncToken||'',
+      s:store.settings.syncServer||'',t:store.settings.ghToken||'',g:store.settings.ghGistId||''}))));
+  }catch(e){return '';}
+}
+function applySyncConfigCode(raw){
+  var s=String(raw||'').replace(/\s+/g,'');
+  if(!s)return false;
+  var o;
+  try{o=JSON.parse(decodeURIComponent(escape(atob(s))));}catch(e){return false;}
+  if(!o||typeof o!=='object'||!(o.r||o.t))return false;
+  if(o.r)store.settings.syncToken=o.r;
+  if(o.s!==undefined)store.settings.syncServer=o.s;
+  if(o.b)store.settings.syBackend=o.b;
+  if(o.t)store.settings.ghToken=o.t;
+  if(o.g)store.settings.ghGistId=o.g;
+  store.settings.syncEnabled=true;
+  save('settings',store.settings);
+  return true;
+}
 function pushSync(){
   if(!syncReady())return;
   setSyncBadge('busy','同步中…');
@@ -4021,6 +4045,12 @@ function showSyncSettings(){
    +'<div style="font-size:12px;margin-top:6px;padding:8px 10px;border-radius:8px;background:#F1F5F9;line-height:1.6">'
    +'实际请求地址：<b style="word-break:break-all">'+esc(syncBase()||location.origin)+'</b><br>'
    +'<span style="color:var(--muter)">若这里显示 <b>file://</b> 或 <b>github.io</b>，说明连不上同步服务器——必须填你的 Render 网址（如 https://journey-sync-xxxx.onrender.com）</span></div></div>'
+   // ---- 配置搬运 ----
+   +'<div class="field" style="margin-top:10px"><label>换设备：一键搬运配置</label>'
+   +'<div class="row"><button class="btn btn-ghost" data-action="sync-copy-cfg" style="flex:1">① 复制本机配置</button>'
+   +'<button class="btn btn-ghost" data-action="sync-paste-cfg" style="flex:1">② 粘贴并启用</button></div>'
+   +'<textarea id="syncCfgIn" placeholder="把从另一台设备复制来的配置码粘到这里，再点「② 粘贴并启用」" style="margin-top:8px;width:100%;box-sizing:border-box;min-height:60px;font-size:16px;border:1px solid var(--line);border-radius:9px;padding:9px 10px"></textarea>'
+   +'<div style="font-size:12px;color:var(--muter);margin-top:6px">在一台设备上填好令牌并连接成功后，复制配置发到另一台设备粘贴即可，不用重复填令牌。</div></div>'
    // ---- 诊断 ----
    +'<div style="margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:12px;line-height:1.8">'
    +'<b style="color:var(--navy)">同步诊断</b><br>'
@@ -4187,6 +4217,19 @@ document.addEventListener('click',function(e){
   else if(a==='gh-open'){
     if(!store.settings.ghGistId){showToast('还没连接云端','err');return;}
     window.open('https://gist.github.com/'+store.settings.ghGistId,'_blank');
+  }
+  else if(a==='sync-copy-cfg'){
+    var _code=syncConfigCode();
+    var _ta=document.getElementById('syncCfgIn'); if(_ta)_ta.value=_code;
+    if(navigator.clipboard&&navigator.clipboard.writeText&&_code)navigator.clipboard.writeText(_code);
+    showToast(_code?'配置已复制 · 发到另一台设备粘贴即可':'生成失败','ok');
+  }
+  else if(a==='sync-paste-cfg'){
+    var _ta2=document.getElementById('syncCfgIn');
+    var _raw=_ta2?(_ta2.value||'').trim():'';
+    if(!_raw){showToast('请先粘贴配置码','err');return;}
+    if(applySyncConfigCode(_raw)){showToast('配置已导入 ✓ 正在同步');initSync();showSyncSettings();}
+    else showToast('配置码无法识别，请重新复制','err');
   }
   else if(a==='save-sync'){
     var _t=document.getElementById('syncTokenIn'),_s=document.getElementById('syncServerIn'),_g2=document.getElementById('ghTokenIn');
