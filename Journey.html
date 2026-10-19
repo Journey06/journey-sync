@@ -7379,6 +7379,9 @@ function ensureDeck(){
   buildDeck();
 }
 var DECK_VER=4;
+/* 页面版本：手机和电脑打开后进「自动同步设置 → 同步诊断」，数字一样就说明是同一版。
+   改完页面记得同步改这里，否则没法判断手机有没有拿到新版。 */
+var APP_BUILD='2026-10-19 17:30';
 function lifePerDayCount(){
   var v=store.settings.lifePerDay;
   if(v===undefined||v===null)v=5;
@@ -9445,6 +9448,7 @@ function showSyncSettings(){
    // ---- 诊断 ----
    +'<div style="margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:12px;line-height:1.8">'
    +'<b style="color:var(--navy)">同步诊断</b><br>'
+   +'页面版本：<b style="color:var(--navy)">'+APP_BUILD+'</b> <span style="color:var(--muter)">（两台设备这里一样，就是同一版；不一样说明手机还没刷新）</span><br>'
    +'本机打卡日期：<b>'+dates.length+'</b> 天'+(dates.length?('（'+esc(dates[0])+' ~ '+esc(dates[dates.length-1])+'）'):'')+'<br>'
    +'连续签到：<b style="color:var(--green)">'+calcStreakCount()+'</b> 天 · 累积 <b>'+calcStreakTotal()+'</b> 天<br>'
    +'补签卡：可用 <b>'+makeupAvailable()+'</b> 张（连续签到 <b>'+calcStreakCount()+'</b> 天 · 历史最长 '+makeupBest()+' 天 · 已获 '+makeupEarned()+' 张 · 已用 '+makeupList().length+' 张）<br>'
