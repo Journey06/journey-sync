@@ -2333,8 +2333,25 @@ function delWord(id){
   renderWords();
 }
 function byId(id){return store.words.find(function(x){return x.id===id;});}
+/* 脏数据修复：旧版合并会丢 firstRated、done 里还会混进不在队列里的词。
+   done 有记录但没有「首次评级」→ 补记，否则今天再点一次会被当成首次，重复累计连续认识天数。 */
+function repairDeckState(){
+  var d=store.deck; if(!d)return false;
+  var ids=d.ids||[], ch=false;
+  if(!Array.isArray(d.done))d.done=[];
+  if(!d.firstRated||typeof d.firstRated!=='object'){d.firstRated={};ch=true;}
+  var nd=[];
+  d.done.forEach(function(x){
+    if(ids.indexOf(x)<0){ch=true;return;}          // 不在今天队列里的完成记录，清掉
+    if(nd.indexOf(x)<0)nd.push(x);
+    if(d.firstRated[x]===undefined){d.firstRated[x]=2;ch=true;}
+  });
+  if(nd.length!==d.done.length||nd.join()!==d.done.join()){d.done=nd;ch=true;}
+  return ch;
+}
 function ensureDeck(){
   var td=bizToday();
+  if(store.deck&&repairDeckState())save('deck',store.deck);
   // 旧牌组（版本不符 / 数量没凑够 / 结构不全）要重建一次；built 标记防止每次渲染都重建
   if(store.deck&&store.deck.date===td&&Array.isArray(store.deck.ids)&&store.deck.ids.length
      && store.deck.firstRated&&store.deck.ver===DECK_VER&&store.deck.built===1)return;
@@ -3933,7 +3950,7 @@ function speak(text){
 
 /* ===== Auto cross-device sync (server-backed) ===== */
 var SYNC_KEYS=['tasks','projects','words','fitness','reports','reminders','deck','streak','followIndex'];
-var syncState={enabled:false,token:'',localTs:0,remoteTs:0,applying:false,pushTimer:null,timer:null,lastMsg:''};
+var syncState={enabled:false,token:'',localTs:0,remoteTs:0,applying:false,pushTimer:null,timer:null,lastMsg:'',lastPull:0};
 function syncBase(){return (store.settings.syncServer||'').replace(/\/+$/,'')||'';}
 function genToken(){var s='';var c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';for(var i=0;i<12;i++)s+=c[Math.floor(Math.random()*c.length)];return s;}
 function setSyncBadge(cls,txt){var b=document.getElementById('syncBadge');if(!b)return;b.className='sync-badge '+cls;b.textContent=txt;}
@@ -4095,37 +4112,66 @@ function mergeStreak(local,remote){
   return {lastDate:dates.length?dates[dates.length-1]:null, dates:dates, madeup:madeup,
           count:streakCountFrom(dates), total:dates.length};  // 两端日期集合取并集，天数由集合推导，算法一致
 }
-// 今日牌组：以「更新的那天的队列」为准，done 只保留本队列里存在的词
-// ⚠️ 旧实现把两端的 done 直接取并集、ids 却只用一方 → done 里混进另一端独有的词，
-//    出现 done=12 / total=8 的假完成，背四五个就允许打卡。
+// 今日牌组：同一天只认「一份」队列，两端最终必须是同一份
+// ⚠️ 旧实现同一天时永远用本机的 ids，只把 done 取并集 →
+//    另一台设备的完成记录会因为「不在我的队列里」被整批丢掉，
+//    于是手机显示「还需 7 个」、电脑显示「还需 15 个」，而且永远合不上。
+// 现在：按「进度更多 → 建队更早 → 队列指纹更小」选出唯一基准队列（规则可交换，
+//       两端各算一次必然选出同一份），再把两端的完成记录并入这份队列。
+function deckDoneCount(d){
+  var ids=(d&&d.ids)||[], dn=(d&&d.done)||[], c=0;
+  for(var i=0;i<ids.length;i++){ if(dn.indexOf(ids[i])>=0)c++; }
+  return c;
+}
+function deckIdSig(d){ return ((d&&d.ids)||[]).join('\u0001'); }
+function pickDeckBase(local,remote){
+  var ld=local.date||'', rd=remote.date||'';
+  if(ld!==rd)return (rd>ld)?remote:local;             // 跨天：用更新的那天
+  var a=deckDoneCount(local), b=deckDoneCount(remote);
+  if(a!==b)return (a>b)?local:remote;                 // 同一天：进度多的当基准，已背的不丢
+  var sa=Number(local.startedAt)||0, sb=Number(remote.startedAt)||0;
+  if(sa!==sb){ if(!sa)return remote; if(!sb)return local; return (sa<sb)?local:remote; }
+  return (deckIdSig(local)<=deckIdSig(remote))?local:remote;   // 兜底：按指纹定序，两端结果一致
+}
 function mergeDeck(local,remote){
   if(!remote)return local;
   if(!local)return remote;
-  var ld=local.date||'', rd=remote.date||'';
-  var base=(rd>ld)?remote:local;                       // 谁的日子新，用谁的队列
-  var ids=(Array.isArray(base.ids)&&base.ids.length)?base.ids.slice():(local.ids||[]).slice();
+  var base=pickDeckBase(local,remote);
+  var ids=(Array.isArray(base.ids)&&base.ids.length)?base.ids.slice():((remote.ids||local.ids||[]).slice());
   var idSet={}; ids.forEach(function(i){idSet[i]=1;});
   var merged=Object.assign({},base);
   merged.ids=ids;
   merged.date=base.date||local.date;
   merged.ver=DECK_VER; merged.built=1;
-  var done=[];
+  var done={},st={},kt={},fr={};
   [local,remote].forEach(function(d){
-    (d.done||[]).forEach(function(i){ if(idSet[i]&&done.indexOf(i)<0)done.push(i); });
-  });
-  merged.done=done;
-  var st={},kt={},fr={};
-  [local,remote].forEach(function(d){
+    (d.done||[]).forEach(function(i){ if(idSet[i])done[i]=1; });
     Object.keys(d.struggled||{}).forEach(function(k){ if(idSet[k])st[k]=1; });
-    Object.keys(d.knownTaps||{}).forEach(function(k){ if(idSet[k])kt[k]=Math.max(kt[k]||0,d.knownTaps[k]); });
+    Object.keys(d.knownTaps||{}).forEach(function(k){ if(idSet[k])kt[k]=Math.max(kt[k]||0,(d.knownTaps||{})[k]||0); });
     Object.keys(d.firstRated||{}).forEach(function(k){ if(idSet[k]&&fr[k]===undefined)fr[k]=d.firstRated[k]; });
   });
-  merged.struggled=st; merged.knownTaps=kt; merged.firstRated=fr;
-  var pick=function(a,b){var x=(a||[]).concat(b||[]).filter(function(i){return idSet[i];});return x.filter(function(v,i){return x.indexOf(v)===i;});};
+  // 已完成但缺「首次评级」记录的词（旧版合并漏带 firstRated 会留下这种脏数据）补记一次，
+  // 否则今天再点一次会被当成首次，重复累计「连续认识天数」。
+  ids.forEach(function(i){ if(done[i]&&fr[i]===undefined)fr[i]=2; });
+  // ⚠️ 输出顺序必须只由队列决定（不能由「本机先还是远端先」决定），
+  //    否则两端每次合并都会判定为「有变化」→ 互相来回推送。
+  merged.done=ids.filter(function(i){return !!done[i];});
+  merged.struggled=sortMap(st); merged.knownTaps=sortMap(kt); merged.firstRated=sortMap(fr);
+  var pick=function(a,b){
+    var has={}; (a||[]).concat(b||[]).forEach(function(i){ if(idSet[i])has[i]=1; });
+    return ids.filter(function(i){return !!has[i];});
+  };
   merged.newIds=pick(local.newIds,remote.newIds);
   merged.lifeIds=pick(local.lifeIds,remote.lifeIds);
   merged.target=base.target||deckTarget();
+  if(!Number(merged.startedAt))merged.startedAt=Number(local.startedAt)||Number(remote.startedAt)||Date.now();
   return merged;
+}
+/* 合并结果里的对象键排序固定，保证同一个状态序列化后逐字节相同 */
+function sortMap(o){
+  var r={}, k=Object.keys(o||{}).sort();
+  for(var i=0;i<k.length;i++)r[k[i]]=o[k[i]];
+  return r;
 }
 // 单词进度：取「更进步」的那份（进度永不回退）
 function mergeWords(local,remote){
@@ -4697,6 +4743,16 @@ backfillWordExamples();
 reconcileStreak();          // 开机自愈：把打卡日期集合从主记录 / 镜像 / 旧结构三处并起来
 renderAll();
 initSync();
+// 切回页面（换标签页 / 手机从后台唤醒）立刻合并一次，不用等 15 秒轮询。
+// 「手机说还需 7 个、电脑说还需 15 个」多半就是这台设备停在了这一步之前。
+var softPull=function(){
+  if(!syncReady())return;
+  if(Date.now()-(syncState.lastPull||0)<3000)return;   // 3 秒内不重复触发
+  syncState.lastPull=Date.now();
+  pullSync();
+};
+if(window&&typeof window.addEventListener==='function')window.addEventListener('focus',softPull);
+if(document&&typeof document.addEventListener==='function')document.addEventListener('visibilitychange',function(){ if(!document.hidden)softPull(); });
 setInterval(renderNight,60000);
 setInterval(tickReminders,10000);
 tickReminders();
