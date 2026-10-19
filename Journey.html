@@ -441,6 +441,18 @@ footer{position:relative;z-index:2;max-width:1320px;margin:6px auto 0;padding:0 
 .stk-day{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;height:40px;border-radius:7px;background:#F3F5F9;color:var(--muter);font-size:13px;font-weight:800;border:1px solid transparent}
 .stk-day small{font-size:9px;font-weight:600;opacity:.75}
 .stk-day.on{background:#E7F4EC;color:#1E8E4F;border-color:#BFE3CE}
+.stk-day.mk{background:#FFF6E5;color:#B77A18;border-color:#F0D8A8}
+.stk-day.gap{cursor:pointer;border-style:dashed;border-color:#D7DEEA}
+.stk-day.gap:active{background:#E9EFF8;border-color:#AFC2DC}
+.mk-bar{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.mk-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;background:#F3EEE1;color:#8A6A21;font-size:12px;font-weight:800;white-space:nowrap}
+.mk-chip.zero{background:#F3F5F9;color:var(--muter)}
+.mk-tip{font-size:11.5px;color:var(--muter);line-height:1.5;flex:1;min-width:0}
+@media(max-width:768px){
+  .stk-day.gap{min-height:38px}
+  .mk-bar{gap:6px}
+  .mk-tip{font-size:11px}
+}
 .kw-find{margin-top:10px}
 .kw-find-head{font-size:12.5px;color:var(--mut);margin:8px 0 6px}
 .find-row{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;margin-bottom:6px}
@@ -2254,11 +2266,14 @@ function wordNeedTaps(d,id){
 }
 function rateWord(id,lv){
   var w=byId(id);if(!w)return;
-  if(!store.deck||store.deck.date!==bizToday())ensureDeck();
+  ensureDeck();                  // 旧结构/跨天牌组先重建（内部有早退，开销可忽略）
   var d=store.deck;if(!d)return;
   d.struggled=d.struggled||{};
   d.knownTaps=d.knownTaps||{};
   w.level=lv; w.lastRate=lv; w.lastReview=bizToday();
+  // 「学过」以第一次评级为准：牌组生成时只写 pickedAt，不写 firstSeen，
+  // 否则后生成牌组的那台设备会看到不同的词池，两台队列就对不上了
+  if(!w.firstSeen)w.firstSeen=bizToday();
   // 当天是否首次看到该词（首次评级决定「连续认识」是否 +1）
   d.firstRated=d.firstRated||{};
   var first=(d.firstRated[id]===undefined);
@@ -2307,7 +2322,7 @@ function rateWord(id,lv){
   showToast('已记录：'+(lv===1?'不熟悉':'不认识')+' · 稍后重现，今天要连认 2 次才算完成');
 }
 function addWord(w,m,t,exs){
-  store.words.push({id:uid(),word:w,translit:m||'',meaning:t||'',examples:exs||[],bank:'biz',level:1,r:0,lastReview:null,nextReview:bizToday(),addedAt:bizToday(),graduated:false,recogStreak:0,firstSeen:null,gradNext:null,lastRate:null});
+  store.words.push({id:uid(),word:w,translit:m||'',meaning:t||'',examples:exs||[],bank:'biz',level:1,r:0,lastReview:null,nextReview:bizToday(),addedAt:bizToday(),graduated:false,recogStreak:0,firstSeen:null,gradNext:null,lastRate:null,pickedAt:null});
   save('words',store.words);
   renderWords();
 }
@@ -2320,33 +2335,60 @@ function delWord(id){
 function byId(id){return store.words.find(function(x){return x.id===id;});}
 function ensureDeck(){
   var td=bizToday();
-  if(store.deck&&store.deck.date===td&&Array.isArray(store.deck.ids)&&store.deck.ids.length&&store.deck.firstRated&&store.deck.ver===DECK_VER)return;
+  // 旧牌组（版本不符 / 数量没凑够 / 结构不全）要重建一次；built 标记防止每次渲染都重建
+  if(store.deck&&store.deck.date===td&&Array.isArray(store.deck.ids)&&store.deck.ids.length
+     && store.deck.firstRated&&store.deck.ver===DECK_VER&&store.deck.built===1)return;
   buildDeck();
 }
-var DECK_VER=3;
+var DECK_VER=4;
 function lifePerDayCount(){
   var v=store.settings.lifePerDay;
   if(v===undefined||v===null)v=5;
   v=Number(v); if(isNaN(v))v=5;
   return Math.max(0,Math.min(10,Math.round(v)));
 }
-// 生活词挑选：优先「学过但还没掌握」（昨天没背完/点过不认识）的，最多占 limit-2 个名额，
-// 剩下的名额给全新生活词，保证每天都有新词进来。
+/* 今日目标总量 = 行业/复习词 + 生活词（默认 10 + 5 = 15） */
+function deckTarget(){return Math.max(1,(store.settings.wordLimit||10)+lifePerDayCount());}
+/* 稳定排序：两台设备必须抽出同一批词，绝不能依赖数组顺序（否则电脑和手机队列完全错开） */
+function cmpWord(a,b){
+  var x=String(a.word||'').toLowerCase(), y=String(b.word||'').toLowerCase();
+  if(x!==y)return x<y?-1:1;
+  var i=String(a.id||''), j=String(b.id||'');
+  return i===j?0:(i<j?-1:1);
+}
+/* 复习优先级：上次点「不认识 / 不熟悉」的最优先 → 入过队但没背完的 → 上次认识的
+   （旧版把「从未评级」排在最后，导致没背完的词永远轮不到，这次一起修掉） */
+function reviewRank(w){
+  var lr=w.lastRate;
+  if(lr===0||lr===1)return 0;
+  if(lr===null||lr===undefined)return 1;
+  return 2;
+}
+// 生活词挑选：优先「学过但还没掌握」（昨天没背完/点过不认识）的，其次「已入队还没背」的，
+// 最后才是全新词；每类内部都按稳定顺序排，保证两台设备抽出同一批。
 function pickLifeIds(limit,td,used){
   if(limit<=0)return [];
   var life=store.words.filter(function(w){return w.bank==='life';});
   var carry=life.filter(function(w){return w.firstSeen && !w.graduated && (w.recogStreak||0)<GRAD_DAYS;});
   carry.sort(function(a,b){
-    var wa=(a.lastRate===2)?1:0, wb=(b.lastRate===2)?1:0;
-    if(wa!==wb)return wa-wb;
-    return (a.recogStreak||0)-(b.recogStreak||0)||String(a.firstSeen||'').localeCompare(String(b.firstSeen||''));
+    var ra=reviewRank(a), rb=reviewRank(b);
+    if(ra!==rb)return ra-rb;                                   // 上次没认出的最优先，与行业词口径一致
+    return (a.recogStreak||0)-(b.recogStreak||0)||cmpWord(a,b); // 稳定 tie-break：两台设备一致
   });
-  var fresh=life.filter(function(w){return !w.firstSeen;});
-  var gradLife=life.filter(function(w){return w.graduated&&(!w.gradNext||w.gradNext<=td);});
+  var unlearned=life.filter(function(w){return !w.firstSeen;});
+  // 入过队但没背完的优先续背（pickedAt 有值），再按字母序，两台结果一致
+  unlearned.sort(function(a,b){
+    var pa=a.pickedAt?'0'+a.pickedAt:'1', pb=b.pickedAt?'0'+b.pickedAt:'1';
+    if(pa!==pb)return pa<pb?-1:1;
+    return cmpWord(a,b);
+  });
+  var gradLife=life.filter(function(w){return w.graduated&&(!w.gradNext||w.gradNext<=td);}).sort(function(a,b){
+    return String(a.gradNext||td).localeCompare(String(b.gradNext||td))||cmpWord(a,b);
+  });
   var carryCap=Math.max(0,limit-2);
   var out=[];
   carry.forEach(function(w){ if(out.length>=carryCap||used[w.id])return; out.push(w.id); });
-  fresh.forEach(function(w){ if(out.length>=limit||used[w.id])return; out.push(w.id); });
+  unlearned.forEach(function(w){ if(out.length>=limit||used[w.id])return; out.push(w.id); });
   gradLife.forEach(function(w){ if(out.length>=limit||used[w.id])return; out.push(w.id); });
   return out;
 }
@@ -2365,42 +2407,48 @@ function weaveLife(others,life){
 }
 function buildDeck(){
   var n=store.settings.wordLimit||10, cap=store.settings.newPerDay||3, td=bizToday();
+  var target=deckTarget(), lifeN=lifePerDayCount();
   var prev=(store.deck&&store.deck.date===td)?store.deck:null;
   // 复习池：已学过（firstSeen 不为空）且未毕业、连续认识<5 天，每天必复习 + 已毕业且到周复习日
   // ⚠️ 生活词由 pickLifeIds 单独排队，必须从复习池里排除，否则会重复入队
   var learning=store.words.filter(function(w){return w.bank!=='life' && w.firstSeen && !w.graduated && (w.recogStreak||0)<GRAD_DAYS;});
   var gradDue=store.words.filter(function(w){return w.bank!=='life' && w.graduated && (!w.gradNext||w.gradNext<=td);});
   learning.sort(function(a,b){
-    var wa=(a.lastRate===2)?1:0, wb=(b.lastRate===2)?1:0; // 上次没「认识」的优先排前面（前一天不认识/不熟悉的先复习）
-    if(wa!==wb)return wa-wb;
-    return (a.recogStreak||0)-(b.recogStreak||0)||(a.lastReview||'').localeCompare(b.lastReview||'');
+    // 排序口径必须与 mergeWords 对齐：上次点「不认识/不熟悉」的排最前，其次上次认识的，最后从未评级的
+    return reviewRank(a)-reviewRank(b)
+      || (a.recogStreak||0)-(b.recogStreak||0)
+      || cmpWord(a,b);                     // 关键：稳定 tie-break，两台设备抽出的队列才会一致
   });
-  gradDue.sort(function(a,b){return (a.gradNext||td).localeCompare(b.gradNext||td);});
+  gradDue.sort(function(a,b){
+    return String(a.gradNext||td).localeCompare(String(b.gradNext||td))||cmpWord(a,b);
+  });
   var used={}, reviewIds=[];
   learning.concat(gradDue).forEach(function(w){ if(!used[w.id]){used[w.id]=1;reviewIds.push(w.id);} });
 
   // ① 生活常用词（每天 lifePerDay 个，穿插在队列中，不占行业新词名额）
-  var lifeIds=pickLifeIds(lifePerDayCount(), td, used);
-  // ② 行业词：复习池 + 每天最多 cap 个新词
-  var others=[], newBiz=[];
-  if(reviewIds.length>=n){
-    // 前一天「不认识/不熟悉」太多 → 今天全是原来的复习词，不新增
-    others=reviewIds.slice(0,n);
-  }else{
-    others=reviewIds.slice();
-    var need=Math.min(cap, n-others.length); // 每天新词封顶 newPerDay（默认 3）
-    store.words.forEach(function(w){
-      if(newBiz.length>=need)return;
-      if(w.bank==='life')return;            // 生活词单独排队
-      if(used[w.id])return;
-      if(w.firstSeen)return;                // 已学过，不算新词
-      others.push(w.id); newBiz.push(w.id); used[w.id]=1;
-      w.firstSeen=td;                       // 标记为今天新学（否则明天又会被当成新词）
-    });
-  }
+  var lifeIds=pickLifeIds(lifeN, td, used);
+  // ② 行业词：先给每日新词留 cap 个名额，其余名额给复习；复习不足时用新词补足到 n
+  //    （旧逻辑「复习池够 n 个就不学新词」会让词库永远停在第一批 10 个）
+  var newPool=store.words.filter(function(w){
+    return w.bank!=='life' && !used[w.id] && !w.firstSeen;
+  });
+  // 排过队但没背完的优先续背（pickedAt 早的先来），再按稳定字母序 → 两台设备抽出同一批
+  newPool.sort(function(a,b){
+    var pa=a.pickedAt?'0'+a.pickedAt:'1', pb=b.pickedAt?'0'+b.pickedAt:'1';
+    if(pa!==pb)return pa<pb?-1:1;
+    return cmpWord(a,b);
+  });
+  var newQuota=Math.min(cap,newPool.length);
+  var others=reviewIds.slice(0,Math.max(0,n-newQuota));
+  var newBiz=[];
+  newPool.forEach(function(w){
+    if(others.length>=n)return;            // 补满 n 个为止（新词耗尽时可能不足）
+    others.push(w.id); newBiz.push(w.id); used[w.id]=1;
+    w.pickedAt=td;                         // 只记「排进过队列」，不记「学过」——学过由 firstSeen 表示
+  });
   // ③ 生活词穿插进主队列
   var ids=weaveLife(others, lifeIds);
-  // 同一天重建牌组时：今天点过「不认识」但还没完成的词必须留在队列里，不能被挤掉
+  // ④ 同一天重建牌组时：今天点过「不认识」但还没完成的词必须留在队列里，不能被挤掉
   if(prev){
     Object.keys(prev.struggled||{}).forEach(function(k){
       if((prev.done||[]).indexOf(k)>=0)return;
@@ -2408,31 +2456,41 @@ function buildDeck(){
     });
   }
   var newIds=newBiz.slice();
-  lifeIds.forEach(function(i){
+  lifeIds.forEach(function(w2,i){
     var w=byId(i);
-    if(w&&!w.firstSeen){ w.firstSeen=td; }   // 新生活词标记为今天新学
+    if(w&&!w.firstSeen&&!w.pickedAt){ w.pickedAt=td; }   // 生活词同理：只记排队，不记学过
   });
   save('words',store.words);
 
-  // 同一天重建牌组时保留已有进度（已背完的、点过不认识的记录）
+  // ⑤ 同一天重建牌组时保留已有进度（只保留仍在队列里的词）
   var done=[], firstRated={}, struggled={}, knownTaps={};
   if(prev){
-    (prev.done||[]).forEach(function(i){ if(ids.indexOf(i)>=0)done.push(i); });
+    (prev.done||[]).forEach(function(i){ if(ids.indexOf(i)>=0&&done.indexOf(i)<0)done.push(i); });
     [['firstRated',firstRated],['struggled',struggled],['knownTaps',knownTaps]].forEach(function(pair){
       var src=prev[pair[0]]||{}, dst=pair[1];
       Object.keys(src).forEach(function(k){ if(ids.indexOf(k)>=0)dst[k]=src[k]; });
     });
     (prev.newIds||[]).forEach(function(i){ if(ids.indexOf(i)>=0&&newIds.indexOf(i)<0)newIds.push(i); });
   }
-  store.deck={date:td,ver:DECK_VER,ids:ids,done:done,firstRated:firstRated,struggled:struggled,knownTaps:knownTaps,newIds:newIds,lifeIds:lifeIds.slice(),startedAt:(prev&&prev.startedAt)||Date.now()};
+  store.deck={date:td,ver:DECK_VER,built:1,ids:ids,done:done,firstRated:firstRated,struggled:struggled,
+              knownTaps:knownTaps,newIds:newIds,lifeIds:lifeIds.slice(),target:target,
+              startedAt:(prev&&prev.startedAt)||Date.now()};
   save('deck',store.deck);
 }
 function activeDeck(){return store.deck?(store.deck.ids||[]).filter(function(i){return (store.deck.done||[]).indexOf(i)<0;}):[];}
 function deckTotal(){return store.deck?(store.deck.ids||[]).length:0;}
-function deckDone(){return store.deck?((store.deck.done||[]).length):0;}
+/* ⚠️ 完成数必须与牌组取交集：跨设备合并后 done 里会混进「别的设备队列里的词」，
+   直接数 done.length 会出现 12/8 这种假完成，背四五个就允许打卡。 */
+function deckDone(){
+  if(!store.deck)return 0;
+  var ids=store.deck.ids||[], d=store.deck.done||[], c=0;
+  for(var i=0;i<ids.length;i++){ if(d.indexOf(ids[i])>=0)c++; }
+  return c;
+}
 function checkIn(){
-  var s=store.streak||{lastDate:null,count:0,total:0,dates:[]}, td=bizToday();
+  var s=store.streak||{lastDate:null,count:0,total:0,dates:[],madeup:[]}, td=bizToday();
   if(!Array.isArray(s.dates))s.dates=[];
+  if(!Array.isArray(s.madeup))s.madeup=[];   // 补签账本随打卡一起保存，别被覆盖掉
   // 往「打卡日期集合」里加今天（天然去重，两端同步合并取并集不会重复计数）
   if(s.dates.indexOf(td)<0)s.dates.push(td);
   s.dates.sort();
@@ -2461,21 +2519,79 @@ function streakMirrorRead(){
 function streakMirrorWrite(dates){
   try{localStorage.setItem(STREAK_MIRROR,JSON.stringify(dates||[]));}catch(e){}
 }
+/* ===== 补签卡 =====
+   规则：**真实打卡天数**（不含补签）每累积 MAKEUP_PERIOD 天，发 1 张补签卡。
+   可用张数 = 已获 − 已用，完全由 dates / madeup 两个集合推导 —— 两端算出来必然一致，
+   不会因为同步重复发卡，也不会因为刷新多发。补签只补日期，不增加「真实天数」，所以不能用来刷卡。*/
+var MAKEUP_PERIOD=30;
+var STREAK_MK_MIRROR='wb_journey_streak_madeup';
+function makeupList(){
+  var s=store.streak||{};
+  if(!Array.isArray(s.madeup))s.madeup=[];
+  return s.madeup.filter(function(x){return /^\d{4}-\d{2}-\d{2}$/.test(x);});
+}
+function makeupMirrorRead(){
+  try{var v=localStorage.getItem(STREAK_MK_MIRROR);var a=v?JSON.parse(v):[];return Array.isArray(a)?a:[];}catch(e){return [];}
+}
+function makeupMirrorWrite(l){
+  try{localStorage.setItem(STREAK_MK_MIRROR,JSON.stringify(l||[]));}catch(e){}
+}
+function streakGenuine(){return Math.max(0,streakDates().length-makeupList().length);}
+/* 发卡规则：**连续签到**满 MAKEUP_PERIOD 天发 1 张补签卡。
+   达成次数直接从打卡日期集合里数「每段连续天数里够几个 30 天」——
+   完全由集合推导，两端算出来必然一致，不需要额外计数器，也绝不会重复发卡。
+   段长只增不减（补签只会把段补长）→ 已获张数永不回退。
+   每次补签最多让某段连涨 1 天，最多多加 1 张，同时消耗 1 张 → 恒等于不赚不赔，无法刷卡。*/
+function makeupEarned(){
+  var ds=streakDates().slice().sort(), earned=0, run=0, prev=0;
+  for(var i=0;i<ds.length;i++){
+    var t=new Date(ds[i]+'T00:00:00').getTime();
+    if(isNaN(t))continue;
+    run=(prev&&(t-prev)===86400000)?run+1:1;
+    prev=t;
+    if(run%MAKEUP_PERIOD===0)earned++;
+  }
+  return earned;
+}
+function makeupAvailable(){return Math.max(0,makeupEarned()-makeupList().length);}
+function makeupNextIn(){return MAKEUP_PERIOD-(calcStreakCount()%MAKEUP_PERIOD);}
+function makeupBest(){   // 历史最长连续段（给用户看进度用）
+  var ds=streakDates().slice().sort(), best=0, run=0, prev=0;
+  for(var i=0;i<ds.length;i++){
+    var t=new Date(ds[i]+'T00:00:00').getTime();
+    if(isNaN(t))continue;
+    run=(prev&&(t-prev)===86400000)?run+1:1;
+    prev=t;
+    if(run>best)best=run;
+  }
+  return best;
+}
+/* 可补签的日期：过去、且当前没打过卡（今天不在此列——今天直接打卡就行） */
+function canMakeup(iso){
+  return !!iso && /^\d{4}-\d{2}-\d{2}$/.test(iso) && iso<bizToday() && !hasCheckedIn(iso);
+}
 /* 开机自愈：把主记录、镜像、旧版 lastDate+count 三处并集起来，
    任一处没坏就能把连续天数还原（这是「打卡了但天数不涨」的兜底） */
 function reconcileStreak(){
-  var s=store.streak||{}, set={};
+  var s=store.streak||{}, set={}, mk={};
+  // 补签账本先收集（主记录 + 镜像），它决定「已用掉几张卡」，丢了会重复发卡
+  (Array.isArray(s.madeup)?s.madeup:[]).forEach(function(d){if(d)mk[d]=1;});
+  makeupMirrorRead().forEach(function(d){if(d)mk[d]=1;});
   (Array.isArray(s.dates)?s.dates:[]).forEach(function(d){if(d)set[d]=1;});
   streakMirrorRead().forEach(function(d){if(d)set[d]=1;});
+  Object.keys(mk).forEach(function(d){set[d]=1;});   // 补签过的日期必须计入打卡集合
   if(s.lastDate){
     var base=fmtDate(s.lastDate); if(base&&base!=='NaN-NaN-NaN')set[base]=1;
     var n=Math.max(0,parseInt(s.count,10)||0), d=new Date(String(s.lastDate)+'T00:00:00');
     if(!isNaN(d.getTime()))for(var i=1;i<n;i++){d.setDate(d.getDate()-1);set[fmtDate(d)]=1;}
   }
-  var dates=Object.keys(set).filter(function(x){return /^\d{4}-\d{2}-\d{2}$/.test(x);}).sort();
-  store.streak={lastDate:dates.length?dates[dates.length-1]:null,dates:dates,count:0,total:dates.length};
+  var re=/^\d{4}-\d{2}-\d{2}$/;
+  var dates=Object.keys(set).filter(function(x){return re.test(x);}).sort();
+  var madeup=Object.keys(mk).filter(function(x){return re.test(x);}).sort();
+  store.streak={lastDate:dates.length?dates[dates.length-1]:null,dates:dates,madeup:madeup,count:0,total:dates.length};
   store.streak.count=calcStreakCount();
   streakMirrorWrite(dates);
+  makeupMirrorWrite(madeup);
   save('streak',store.streak);
   return dates.length;
 }
@@ -2500,14 +2616,65 @@ function calcStreakTotal(){return streakDates().length;}
 function doWordCheckIn(){
   ensureDeck();
   reconcileStreak();             // 打卡前先自愈一次，避免主记录异常导致「打卡了天数不涨」
-  var total=deckTotal(), done=deckDone();
-  if(total===0){showToast('今天还没有单词可背');return;}
-  if(done<total){showToast('还有 '+(total-done)+' 个单词没背完，背完才能打卡');return;}
+  var total=deckTotal(), remain=activeDeck().length, done=total-remain;
+  if(total===0){showToast('今天还没有单词可背','err');return;}
+  if(remain>0){
+    showToast('还有 '+remain+' 个没背完（今日 '+total+' 个，已背 '+done+' 个），背完才能打卡','err');
+    return;
+  }
   if(hasCheckedIn()){showToast('今天已经打卡啦 ✓（'+bizToday()+'）');return;}   // 按日期集合判断，手机打过电脑也算
   checkIn();
   renderWords();renderLife();
   showToast('打卡成功 · 连续 '+calcStreakCount()+' 天 · 累积 '+calcStreakTotal()+' 天');
   schedulePush();                // 立刻回传云端，另一台设备下拉就能看到
+}
+/* ===== 补签：用补签卡把漏掉的一天补回来 ===== */
+function askMakeup(iso){
+  if(!iso)return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(iso)){showToast('日期格式不对','err');return;}
+  if(iso>=bizToday()){showToast('今天及以后不能补签，直接打卡就行');return;}
+  if(hasCheckedIn(iso)){showToast('这天已经打过卡了');return;}
+  var av=makeupAvailable();
+  if(av<1){
+    showToast('补签卡不足——连续签到每满 '+MAKEUP_PERIOD+' 天才发 1 张，当前连续 '+calcStreakCount()+' 天，还差 '+makeupNextIn()+' 天','err');
+    return;
+  }
+  var wk='日一二三四五六'.charAt(new Date(iso+'T00:00:00').getDay());
+  var html=''
+   +'<div style="font-size:13.5px;line-height:1.8">用 <b>1 张补签卡</b>把 <b style="color:var(--navy)">'+esc(iso)+'（周'+wk+'）</b> 补上吗？</div>'
+   +'<div style="margin-top:11px;padding:10px 12px;border-radius:10px;background:#F1F5F9;font-size:12.5px;color:var(--mut);line-height:1.7">'
+   +'可用补签卡：<b>'+av+'</b> 张 → 补签后剩 <b>'+(av-1)+'</b> 张<br>'
+   +'发卡规则：<b>连续签到每满 '+MAKEUP_PERIOD+' 天</b>发 1 张（当前连续 '+calcStreakCount()+' 天）。<br>'
+   +'补上的日期会一起同步到手机 / 电脑，两端都算这一天。<br>'
+   +'补签只是修复记录，<b>不会</b>额外发卡，也不能用来刷连续天数。</div>'
+   +'<div class="row" style="margin-top:14px">'
+   +'<button class="btn btn-ghost" style="flex:1" data-action="close-modal">取消</button>'
+   +'<button class="btn btn-primary" style="flex:1" data-action="makeup-do" data-date="'+esc(iso)+'">确定补签</button></div>';
+  openModal('补签确认',html);
+}
+function doMakeup(iso){
+  if(!iso)return;
+  if(!canMakeup(iso)){closeModal();showToast('这个日期不能补签');return;}
+  var av=makeupAvailable();
+  if(av<1){closeModal();showToast('补签卡不足','err');return;}
+  var s=store.streak||{lastDate:null,count:0,total:0,dates:[],madeup:[]};
+  if(!Array.isArray(s.dates))s.dates=[];
+  if(!Array.isArray(s.madeup))s.madeup=[];
+  store.streak=s;                       // 先挂上再推导
+  if(s.dates.indexOf(iso)<0)s.dates.push(iso);
+  s.dates.sort();
+  if(s.madeup.indexOf(iso)<0)s.madeup.push(iso);
+  s.madeup.sort();
+  s.lastDate=s.dates[s.dates.length-1];
+  streakMirrorWrite(s.dates);
+  makeupMirrorWrite(s.madeup);
+  s.count=calcStreakCount();
+  s.total=s.dates.length;
+  save('streak',s);
+  closeModal();
+  renderWords();renderLife();renderToday();
+  showToast('已补签 '+iso+'（周'+'日一二三四五六'.charAt(new Date(iso+'T00:00:00').getDay())+'）· 连续 '+calcStreakCount()+' 天 · 剩 '+makeupAvailable()+' 张卡');
+  schedulePush();                       // 立刻回传云端，另一台设备下拉就能看到
 }
 function reshuffleDeck(){
   if(!store.deck)return;
@@ -2516,7 +2683,7 @@ function reshuffleDeck(){
   save('deck',store.deck);renderWords();
 }
 function mkWord(a,bank){
-  return {id:uid(),word:a[0],translit:a[1],meaning:a[2],examples:a[3]||[],bank:bank||'biz',level:1,r:0,lastReview:null,nextReview:bizToday(),addedAt:bizToday(),graduated:false,recogStreak:0,firstSeen:null,gradNext:null,lastRate:null};
+  return {id:uid(),word:a[0],translit:a[1],meaning:a[2],examples:a[3]||[],bank:bank||'biz',level:1,r:0,lastReview:null,nextReview:bizToday(),addedAt:bizToday(),graduated:false,recogStreak:0,firstSeen:null,gradNext:null,lastRate:null,pickedAt:null};
 }
 function seedWords(){
   if(store.words.length>0)return;
@@ -2660,7 +2827,7 @@ function renderToday(){
   if(totalN>0){
     items.push({tag:'words',tagTxt:'俄语单词',
       title:'今日单词还差 '+remain+' / '+totalN+' 个',
-      meta:'每天 '+store.settings.newPerDay+' 新 + '+lifePerDayCount()+' 生活词 + 复习 · 背完才能打卡',overdue:false,
+      meta:'今日 '+deckTarget()+' 个（'+(store.settings.wordLimit||10)+' 复习/新词 + '+lifePerDayCount()+' 生活）· 背完才能打卡',overdue:false,
       action:'goto',actionId:'words'});
   }
   // 客户跟进提醒：距上次跟进满 7 天，或设了「X 天后提醒」已到期的客户
@@ -3175,17 +3342,27 @@ function showFindDetail(word,meaning,translit,id){
   openModal('查词 · '+word,h);
 }
 function streakStripHtml(){
-  var dates=streakDates(),set={},end=bizToday();
+  var dates=streakDates(),set={},mkset={},end=bizToday();
   dates.forEach(function(d){set[d]=1;});
-  var h='';
+  makeupList().forEach(function(d){mkset[d]=1;});
+  var av=makeupAvailable(),h='';
   for(var i=13;i>=0;i--){
     var d=new Date(end+'T00:00:00');d.setDate(d.getDate()-i);
-    var iso=fmtDate(d),on=!!set[iso];
-    h+='<div class="stk-day'+(on?' on':'')+'" title="'+esc(iso)+(on?' 已打卡':' 未打卡')+'">'+(on?'✓':'')+'<small>'+esc(iso.slice(8))+'</small></div>';
+    var iso=fmtDate(d),on=!!set[iso],mk=on&&!!mkset[iso];
+    var canMk=!on&&iso<end;                    // 过去漏掉的那天才可点（今天直接打卡就行）
+    var cls='stk-day'+(on?(mk?' on mk':' on'):(canMk?' gap':''));
+    var act=canMk?(' data-action="makeup-ask" data-date="'+esc(iso)+'"'):'';
+    var tip=esc(iso)+(on?(mk?' 已补签':' 已打卡'):(canMk?(av>0?' 未打卡 · 点此用补签卡补':' 未打卡 · 补签卡不足'):' 未打卡'));
+    h+='<div class="'+cls+'"'+act+' title="'+tip+'">'+(on?(mk?'补':'✓'):'')+'<small>'+esc(iso.slice(8))+'</small></div>';
   }
   return '<div class="stk-wrap"><div class="stk-head"><span>最近 14 天打卡（北京时间 04:00 前算前一天）</span>'
     +'<span>连续 <b style="color:var(--green)">'+calcStreakCount()+'</b> 天 · 累积 <b style="color:var(--navy)">'+calcStreakTotal()+'</b> 天</span></div>'
-    +'<div class="stk-grid">'+h+'</div></div>';
+    +'<div class="stk-grid">'+h+'</div>'
+    +'<div class="mk-bar"><span class="mk-chip'+(av?'':' zero')+'">补签卡 '+av+' 张</span>'
+    +(av
+      ? '<span class="mk-tip">灰色虚线的格子点一下就能补签（连续签到每满 '+MAKEUP_PERIOD+' 天发 1 张）</span>'
+      : '<span class="mk-tip">连续签到每满 '+MAKEUP_PERIOD+' 天发 1 张，当前连续 <b>'+calcStreakCount()+'</b> 天，还差 <b>'+makeupNextIn()+'</b> 天</span>')
+    +'</div></div>';
 }
 function wordSearchInput(v){
   wordSearchTerm=(v||'').trim().toLowerCase();
@@ -3906,23 +4083,48 @@ function pushSync(){
 function mergeStreak(local,remote){
   var a=(local&&Array.isArray(local.dates)&&local.dates.length)?local.dates:(local&&local.lastDate?[local.lastDate]:[]);
   var b=(remote&&Array.isArray(remote.dates)&&remote.dates.length)?remote.dates:(remote&&remote.lastDate?[remote.lastDate]:[]);
+  var re=/^\d{4}-\d{2}-\d{2}$/;
+  // 补签账本同样取并集：两端都补签过就都记着，可用张数由「已获 − 已用」推导，不会重复发卡
+  var am=(local&&Array.isArray(local.madeup))?local.madeup:[];
+  var bm=(remote&&Array.isArray(remote.madeup))?remote.madeup:[];
+  var mset={}; am.concat(bm).forEach(function(d){if(d)mset[d]=1;});
   var set={}; a.concat(b).forEach(function(d){if(d)set[d]=1;});
-  var dates=Object.keys(set).filter(function(x){return /^\d{4}-\d{2}-\d{2}$/.test(x);}).sort();
-  return {lastDate:dates.length?dates[dates.length-1]:null, dates:dates,
+  Object.keys(mset).forEach(function(d){set[d]=1;});   // 补签过的日期必须计入打卡集合
+  var dates=Object.keys(set).filter(function(x){return re.test(x);}).sort();
+  var madeup=Object.keys(mset).filter(function(x){return re.test(x);}).sort();
+  return {lastDate:dates.length?dates[dates.length-1]:null, dates:dates, madeup:madeup,
           count:streakCountFrom(dates), total:dates.length};  // 两端日期集合取并集，天数由集合推导，算法一致
 }
-// 今日牌组：已背单词取并集（手机背 A、B，电脑背 C、D → 合起来都算背过）
+// 今日牌组：以「更新的那天的队列」为准，done 只保留本队列里存在的词
+// ⚠️ 旧实现把两端的 done 直接取并集、ids 却只用一方 → done 里混进另一端独有的词，
+//    出现 done=12 / total=8 的假完成，背四五个就允许打卡。
 function mergeDeck(local,remote){
   if(!remote)return local;
   if(!local)return remote;
-  var la=Array.isArray(local.done)?local.done:[];
-  var lb=Array.isArray(remote.done)?remote.done:[];
-  var set={}; la.concat(lb).forEach(function(x){set[x]=1;});
-  var merged=Object.assign({},local);
-  merged.done=Object.keys(set);
-  // 牌组本身取「更新的那天」的那份，避免跨天串味
   var ld=local.date||'', rd=remote.date||'';
-  if(rd>ld){merged.ids=remote.ids||local.ids;merged.newIds=remote.newIds||local.newIds;merged.date=rd;merged.done=Object.keys(set);}
+  var base=(rd>ld)?remote:local;                       // 谁的日子新，用谁的队列
+  var ids=(Array.isArray(base.ids)&&base.ids.length)?base.ids.slice():(local.ids||[]).slice();
+  var idSet={}; ids.forEach(function(i){idSet[i]=1;});
+  var merged=Object.assign({},base);
+  merged.ids=ids;
+  merged.date=base.date||local.date;
+  merged.ver=DECK_VER; merged.built=1;
+  var done=[];
+  [local,remote].forEach(function(d){
+    (d.done||[]).forEach(function(i){ if(idSet[i]&&done.indexOf(i)<0)done.push(i); });
+  });
+  merged.done=done;
+  var st={},kt={},fr={};
+  [local,remote].forEach(function(d){
+    Object.keys(d.struggled||{}).forEach(function(k){ if(idSet[k])st[k]=1; });
+    Object.keys(d.knownTaps||{}).forEach(function(k){ if(idSet[k])kt[k]=Math.max(kt[k]||0,d.knownTaps[k]); });
+    Object.keys(d.firstRated||{}).forEach(function(k){ if(idSet[k]&&fr[k]===undefined)fr[k]=d.firstRated[k]; });
+  });
+  merged.struggled=st; merged.knownTaps=kt; merged.firstRated=fr;
+  var pick=function(a,b){var x=(a||[]).concat(b||[]).filter(function(i){return idSet[i];});return x.filter(function(v,i){return x.indexOf(v)===i;});};
+  merged.newIds=pick(local.newIds,remote.newIds);
+  merged.lifeIds=pick(local.lifeIds,remote.lifeIds);
+  merged.target=base.target||deckTarget();
   return merged;
 }
 // 单词进度：取「更进步」的那份（进度永不回退）
@@ -3940,6 +4142,24 @@ function mergeWords(local,remote){
     m.recogStreak=Math.max(lw.recogStreak||0,rw.recogStreak||0);
     if(rw.graduated||lw.graduated)m.graduated=true;
     if(rw.gradNext&&(!lw.gradNext||rw.gradNext>lw.gradNext))m.gradNext=rw.gradNext;
+    // firstSeen 必须取「更早」的非空值：丢了会被当成全新词重新学，昨天点过不认识的词也不会进复习池
+    if(lw.firstSeen&&rw.firstSeen)m.firstSeen=lw.firstSeen<rw.firstSeen?lw.firstSeen:rw.firstSeen;
+    else m.firstSeen=lw.firstSeen||rw.firstSeen||null;
+    if(lw.addedAt&&rw.addedAt)m.addedAt=lw.addedAt<rw.addedAt?lw.addedAt:rw.addedAt;
+    // pickedAt（排进过队列的日期）取更早的非空值：续背顺序要在两台之间保持一致
+    if(lw.pickedAt&&rw.pickedAt)m.pickedAt=lw.pickedAt<rw.pickedAt?lw.pickedAt:rw.pickedAt;
+    else m.pickedAt=lw.pickedAt||rw.pickedAt||null;
+    // 最近一次评级：跟 lastReview 更晚的那方走（同日取更差的，避免把「不认识」洗成「认识」）
+    var lr=lw.lastReview||'', rr=rw.lastReview||'';
+    if(rr>lr){m.lastReview=rw.lastReview;m.lastRate=rw.lastRate;}
+    else if(lr>rr){m.lastReview=lw.lastReview;m.lastRate=lw.lastRate;}
+    else{
+      var cand=[lw.lastRate,rw.lastRate].filter(function(v){return v===0||v===1||v===2;});
+      m.lastRate=cand.length?Math.min.apply(null,cand):(lw.lastRate!==undefined?lw.lastRate:rw.lastRate);
+      if(lw.lastReview||rw.lastReview)m.lastReview=lw.lastReview||rw.lastReview;
+    }
+    // 例句：本地没有就用远端的补全
+    if((!m.examples||!m.examples.length)&&rw.examples&&rw.examples.length)m.examples=rw.examples;
     map[rw.id]=m;
   });
   return order.map(function(k){return map[k];});
@@ -4061,6 +4281,7 @@ function showSyncSettings(){
    +'<b style="color:var(--navy)">同步诊断</b><br>'
    +'本机打卡日期：<b>'+dates.length+'</b> 天'+(dates.length?('（'+esc(dates[0])+' ~ '+esc(dates[dates.length-1])+'）'):'')+'<br>'
    +'连续签到：<b style="color:var(--green)">'+calcStreakCount()+'</b> 天 · 累积 <b>'+calcStreakTotal()+'</b> 天<br>'
+   +'补签卡：可用 <b>'+makeupAvailable()+'</b> 张（连续签到 <b>'+calcStreakCount()+'</b> 天 · 历史最长 '+makeupBest()+' 天 · 已获 '+makeupEarned()+' 张 · 已用 '+makeupList().length+' 张）<br>'
    +'最近一次：<span style="color:var(--mut)">'+esc(syncState.lastMsg||'（还没同步过）')+'</span></div>'
    +'<div class="rem-row" style="margin-top:12px"><div class="rl"><b id="syncStatusTxt">状态：'+(enabled?'已开启':'未开启')+'</b></div>'
    +'<button class="btn btn-ghost" data-action="save-sync">保存设置</button><button class="btn btn-ghost" data-action="test-sync">立即同步</button></div>'
@@ -4126,6 +4347,8 @@ document.addEventListener('click',function(e){
   else if(a==='rate')rateWord(id,+el.getAttribute('data-lv'));
   else if(a==='reshuffle')reshuffleDeck();
   else if(a==='word-checkin')doWordCheckIn();
+  else if(a==='makeup-ask')askMakeup(el.getAttribute('data-date'));
+  else if(a==='makeup-do')doMakeup(el.getAttribute('data-date'));
   else if(a==='fit'){
     var d=el.getAttribute('data-date');
     var i=store.fitness.indexOf(d);
