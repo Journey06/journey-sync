@@ -7154,17 +7154,27 @@ function pickWords(n){
   graduated.sort(function(a,b){return (a.nextReview||td).localeCompare(b.nextReview||td);});
   return studying.concat(graduated).slice(0,n);
 }
-// 把某个词在今日队列里往后挪 gap 个位置（间隔重现）
+// 把某个词在今日队列里往后挪 gap 个「还没背完」的位置（间隔重现）
+// ⚠️ 必须按「未完成词」计数，不能按数组下标：中间只要夹着已背完的词，
+//    按下标挪 2 格在界面上可能一个都没隔开，看起来就是「点完不认识立刻又出现」。
 function moveInDeck(d,id,gap){
   var arr=(d&&d.ids)||[];
   var p=arr.indexOf(id);
   if(p<0)return;
+  var done=(d&&d.done)||[];
   arr.splice(p,1);
-  var at=Math.min(p+gap, arr.length);
+  var cnt=0, at=arr.length;          // 默认放末尾（后面没那么多未完成的词时）
+  for(var i=p;i<arr.length;i++){
+    if(done.indexOf(arr[i])<0){ cnt++; if(cnt>=gap){ at=i+1; break; } }
+  }
   arr.splice(at,0,id);
+  // 顺序版本号：同步合并时用它决定「听谁的顺序」。
+  // 没有它的话，移动后的队列会被云端的原始顺序打回原样（这才是「马上又叫背」的真凶）。
+  d.ordRev=Math.max(Date.now(), (Number(d.ordRev)||0)+1);
 }
 // 该词今天还需要点几次「认识」才算背完（点过不认识=2 次，否则 1 次）
 var STRUGGLE_TAPS=2;
+var STRUGGLE_GAP=3;   // 点过「不认识」后，往后隔 3 个还没背完的词才重新出现
 function wordNeedTaps(d,id){
   var need=(d&&d.struggled&&d.struggled[id])?STRUGGLE_TAPS:1;
   var had=(d&&d.knownTaps&&d.knownTaps[id])||0;
@@ -7203,11 +7213,11 @@ function rateWord(id,lv){
       showToast(need>1?('已完成 ✓ 这个不认识过的词，今天连认了 '+need+' 次'):'已记录：认识');
       return;
     }
-    // 点过不认识的词：第一次点认识还不算完成，排到 2 个词后再次确认
-    moveInDeck(d,id,2);
+    // 点过不认识的词：第一次点认识还不算完成，排到 3 个词后再次确认
+    moveInDeck(d,id,STRUGGLE_GAP);
     save('words',store.words);save('deck',store.deck);
     renderWords();renderLife();
-    showToast('这个词点过「不认识」→ 还差 1 次认识才算完成（已排到 2 个词后）');
+    showToast('这个词点过「不认识」→ 还差 1 次认识才算完成（已排到 '+STRUGGLE_GAP+' 个词后）');
     return;
   }
 
@@ -7221,11 +7231,11 @@ function rateWord(id,lv){
   d.knownTaps[id]=0;
   var di=d.done.indexOf(id);
   if(di>=0)d.done.splice(di,1); // 已经点过认识的，重新拉回队列
-  // 间隔 2 个词后再次出现（当天 spaced repetition）
-  moveInDeck(d,id,2);
+  // 间隔 3 个词后再次出现（当天 spaced repetition）
+  moveInDeck(d,id,STRUGGLE_GAP);
   save('words',store.words);save('deck',store.deck);
   renderWords();renderLife();
-  showToast('已记录：'+(lv===1?'不熟悉':'不认识')+' · 稍后重现，今天要连认 2 次才算完成');
+  showToast('已记录：'+(lv===1?'不熟悉':'不认识')+' · 已排到 '+STRUGGLE_GAP+' 个词之后，今天要连认 '+STRUGGLE_TAPS+' 次才算完成');
 }
 function addWord(w,m,t,exs){
   store.words.push({id:uid(),word:w,translit:m||'',meaning:t||'',examples:exs||[],bank:'biz',level:1,r:0,lastReview:null,nextReview:bizToday(),addedAt:bizToday(),graduated:false,recogStreak:0,firstSeen:null,gradNext:null,lastRate:null,pickedAt:null});
@@ -7254,6 +7264,19 @@ function repairDeckState(){
   });
   if(nd.length!==d.done.length||nd.join()!==d.done.join()){d.done=nd;ch=true;}
   if(pruneFakeDone())ch=true;      // 今天根本没碰过的词不算完成（跨设备串入 / 同名重复词条）
+  // 一次性整理：旧版同步会把「点过不认识」的词打回队首，这里把它们沉到队尾纠正一次。
+  // ordFix 记住已整理过，之后点不认识仍按 STRUGGLE_GAP 正常往后挪 3 个。
+  if(!d.ordFix){
+    var stg=d.struggled||{}, pend=[];
+    ids.forEach(function(i){ if(stg[i]&&d.done.indexOf(i)<0)pend.push(i); });
+    if(pend.length){
+      var rest=ids.filter(function(i){return pend.indexOf(i)<0;});
+      d.ids=rest.concat(pend);
+      d.ordRev=Math.max(Date.now(),(Number(d.ordRev)||0)+1);
+      ch=true;
+    }
+    d.ordFix=1; ch=true;
+  }
   return ch;
 }
 /* 词形归一化：判重、匹配同名词条都靠它 */
@@ -7491,7 +7514,8 @@ function buildDeck(){
   }
   store.deck={date:td,ver:DECK_VER,built:1,ids:ids,done:done,firstRated:firstRated,struggled:struggled,
               knownTaps:knownTaps,newIds:newIds,lifeIds:lifeIds.slice(),target:target,
-              startedAt:(prev&&prev.startedAt)||Date.now()};
+              startedAt:(prev&&prev.startedAt)||Date.now(),
+              ordRev:(prev&&Number(prev.ordRev))||0};
   save('deck',store.deck);
 }
 function activeDeck(){return store.deck?(store.deck.ids||[]).filter(function(i){return (store.deck.done||[]).indexOf(i)<0;}):[];}
@@ -8503,7 +8527,7 @@ function renderWords(){
       +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:10px 0 2px;font-size:12.5px;color:var(--muter)"><span>背完这 '+total+' 个才能打卡 · 还需 <b style="color:var(--navy)">'+(total-done)+'</b> 个</span>'
       +'<button class="btn btn-ghost" data-action="reset-deck-today" style="font-size:12px;padding:5px 9px;min-height:0;flex:0 0 auto">进度不对？重置</button></div>'
       +'<div style="font-size:12px;color:var(--navy2);background:#F4F8FD;border:1px solid #DCE7F3;border-radius:9px;padding:8px 11px;line-height:1.6;margin-top:8px">'
-      +'点卡片看俄语并朗读 · 点俄语可查意思和全部例句<br>点过「不认识 / 不熟悉」的词，当天要连点 <b>2 次「认识」</b>才算完成，中间隔 2 个词后重现<br>扩充词库（5000 词）只带词 + 音标 + 释义，音标是按音节切的字母转写，<b>重音请点 🔊 跟读确认</b></div>';
+      +'点卡片看俄语并朗读 · 点俄语可查意思和全部例句<br>点过「不认识 / 不熟悉」的词，当天要连点 <b>2 次「认识」</b>才算完成，中间隔 <b>3 个词</b>后重现<br>扩充词库（5000 词）只带词 + 音标 + 释义，音标是按音节切的字母转写，<b>重音请点 🔊 跟读确认</b></div>';
     var rates=[['0.75','慢'],['0.6','很慢'],['0.45','最慢']];
     var sr=store.settings.speechRate||0.6;
     h+='<div style="display:flex;align-items:center;gap:8px;margin:12px 0;font-size:12.5px;color:var(--mut)">朗读语速'
@@ -9199,6 +9223,11 @@ function deckIdSig(d){ return ((d&&d.ids)||[]).join('\u0001'); }
 function pickDeckBase(local,remote){
   var ld=local.date||'', rd=remote.date||'';
   if(ld!==rd)return (rd>ld)?remote:local;             // 跨天：用更新的那天
+  // ⚠️ 顺序版本优先：谁最近点过「不认识」把词往后挪过，就听谁的顺序。
+  //    旧版没有这条，进度相同时按「队列指纹」兜底 → 云端那份原始顺序永远胜出，
+  //    本机刚挪走的词下一轮合并就被打回队首（用户看到的就是「点完不认识立刻又出现」）。
+  var oa=Number(local.ordRev)||0, ob=Number(remote.ordRev)||0;
+  if(oa!==ob)return (oa>ob)?local:remote;
   var a=deckDoneCount(local), b=deckDoneCount(remote);
   if(a!==b)return (a>b)?local:remote;                 // 同一天：进度多的当基准，已背的不丢
   var sa=Number(local.startedAt)||0, sb=Number(remote.startedAt)||0;
@@ -9227,6 +9256,9 @@ function mergeDeck(local,remote){
   });
   // 已完成但缺「首次评级」记录的词（旧版合并漏带 firstRated 会留下这种脏数据）补记一次，
   // 否则今天再点一次会被当成首次，重复累计「连续认识天数」。
+  // ⚠️ 先补 done：knownTaps 是两端取 max 合并的，两台各点 1 次「认识」会合并成 2 次、
+  //    已经够数却没人写 done，于是「点够次数还要再点一次」。
+  ids.forEach(function(i){ if(st[i]&&(kt[i]||0)>=STRUGGLE_TAPS)done[i]=1; });
   ids.forEach(function(i){ if(done[i]&&fr[i]===undefined)fr[i]=2; });
   // ⚠️ 输出顺序必须只由队列决定（不能由「本机先还是远端先」决定），
   //    否则两端每次合并都会判定为「有变化」→ 互相来回推送。
@@ -9239,6 +9271,11 @@ function mergeDeck(local,remote){
   merged.newIds=pick(local.newIds,remote.newIds);
   merged.lifeIds=pick(local.lifeIds,remote.lifeIds);
   merged.target=base.target||deckTarget();
+  // 顺序版本取两端较大值：合并后两端都一致，不会因为「谁大谁小」反复来回推送
+  merged.ordRev=Math.max(Number(local.ordRev)||0,Number(remote.ordRev)||0);
+  // 「已整理过队尾」的标记必须传播，否则一端整理完、另一端没有 →
+  // 每次合并都再整理一次、ordRev 一路递增 → 15 秒一轮无限推送
+  if(local.ordFix||remote.ordFix)merged.ordFix=1;
   if(!Number(merged.startedAt))merged.startedAt=Number(local.startedAt)||Number(remote.startedAt)||Date.now();
   return merged;
 }
